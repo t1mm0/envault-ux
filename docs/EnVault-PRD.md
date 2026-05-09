@@ -140,6 +140,20 @@ Users should always be able to see exactly what EnVault knows, stores, and does 
 #### Description
 The core encrypted store for all secrets and environment variables. Designed as a structured database of key–value pairs with rich metadata, not a file archive.
 
+#### Canonical domain hierarchy
+
+The following ordering is normative for product, UX, and API modeling:
+
+1. **Project** — logical application or repo-aligned container in EnVault.
+2. **Vault** — **one vault per project** (1:1). The vault is not scoped only to a single environment; environments exist *inside* the vault.
+3. **Environment** — deployment namespace inside the project vault (`development`, `staging`, `production`, `preview`, custom). Each environment maintains an independent set of variables unless inheritance/promotion features link them (see §5.2).
+4. **Variable** — a single stored configuration unit (synonym: secret record, env var record) with FR-V-01 metadata.
+5. **Key** — the variable’s identifier (name); **must be unique within an environment**. The **value** is not a sixth hierarchy level—it is paired with the key inside the variable record (`{ key, value, metadata… }`).
+
+**Path mnemonic:** `Project → Vault → Environment → Variable` with **`key` + `value`** at the leaf.
+
+**Fleet / org UI** may introduce a **Workspace** layer grouping many projects; it sits **above** Project and does not replace Vault or Environment.
+
 #### Requirements
 
 **FR-V-01** — Each secret record shall store: key name, encrypted value, description, environment(s), tags, owner, created/updated timestamps, version history (minimum last 20 versions), and expiry date.

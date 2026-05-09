@@ -1,10 +1,14 @@
-import { useState, useEffect, useRef } from "react";
-
-// ─── Google Fonts ────────────────────────────────────────────────────────────
-const FONT_LINK = document.createElement("link");
-FONT_LINK.rel = "stylesheet";
-FONT_LINK.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap";
-document.head.appendChild(FONT_LINK);
+/*
+ * App.jsx — EnVault prototype shell (approvals, vault, add-project flows)
+ * Last modified: 2026-05-09 — Cursor Agent
+ * Completeness: 93/100 — hierarchy documented (README/PRD); project vault + env slices; workspace fleet
+ */
+import { useEffect, useState } from "react";
+import { appStyles as sx } from "./styles/createAppStyles.js";
+import { globalAppCss } from "./styles/globalAppCss.js";
+import { loadGoogleFontsOnce } from "./bootstrap/loadFonts.js";
+import { useTheme } from "./theme/ThemeProvider.jsx";
+import { v } from "./theme/cssVars.js";
 
 // ─── Seed Data ───────────────────────────────────────────────────────────────
 const INITIAL_PENDING = [
@@ -157,9 +161,237 @@ const TYPE_META = {
 
 const ENV_COLOR = { production:"#f43f5e", staging:"#f97316", preview:"#8b5cf6", development:"#3b82f6", all:"#64748b" };
 
+const HEALTH_META = {
+  ok: { label: "Healthy", dot: "#10b981" },
+  attention: { label: "Needs review", dot: "#f97316" },
+  error: { label: "Blocked", dot: "#f43f5e" },
+};
+
+const INITIAL_PROJECTS = [
+  {
+    id: "p-default",
+    name: "my-saas-app",
+    slug: "my-saas-app",
+    source: "github",
+    detail: "GitHub · acme/my-saas-app",
+    health: "attention",
+    stats: {
+      pendingApprovals: 4,
+      activeRules: 2,
+      vaultKeys: 18,
+      lastEvent: "Sync queued for production · 2h ago",
+    },
+  },
+  {
+    id: "p-payments",
+    name: "payments-api",
+    slug: "payments-api",
+    source: "github",
+    detail: "GitHub · acme/payments-api · Render",
+    health: "ok",
+    stats: {
+      pendingApprovals: 0,
+      activeRules: 5,
+      vaultKeys: 12,
+      lastEvent: "Secret rotated · 1d ago",
+    },
+  },
+  {
+    id: "p-marketing",
+    name: "marketing-site",
+    slug: "marketing-site",
+    source: "paste",
+    detail: "Pasted env · Vercel static",
+    health: "attention",
+    stats: {
+      pendingApprovals: 1,
+      activeRules: 1,
+      vaultKeys: 6,
+      lastEvent: "Preview env queued · 5h ago",
+    },
+  },
+];
+
+/**
+ * Vault model: `vaultScope: "project"` = one vault per app; each environment is a slice (namespace) inside it.
+ * Alternate model `environment` would treat each env as its own top-level vault — not used in this prototype.
+ * Canonical hierarchy: Project → Vault → Environment → Variable; key name + value as paired fields on the variable.
+ */
+const VAULT_SCOPE_PRODUCT = /** @type {"project"} */ ("project");
+
+function inferVaultSecretType(key) {
+  const u = key.toUpperCase();
+  if ((/URL|URI|DSN|HOST/.test(u) && !/API_KEY/.test(u)) || u.endsWith("_URL")) return "connection-string";
+  if (/JWT/.test(u)) return "jwt-secret";
+  if (/SECRET|KEY|TOKEN|PASSWORD|PASS|CRED/.test(u)) return "api-key";
+  return "string";
+}
+
+/** Map wizard KEY=value rows into vault secret rows (prototype). */
+function wizardKeysToVaultSecrets(keys, updated) {
+  const d = updated ?? new Date().toISOString().slice(0, 10);
+  return keys.map(k => ({
+    key: k.key,
+    type: inferVaultSecretType(k.key),
+    isSecret: k.isSecret,
+    demoPlain: k.isSecret ? undefined : (k.value.length > 72 ? `${k.value.slice(0, 69)}…` : k.value || "—"),
+    updated: d,
+    health: "ok",
+  }));
+}
+
+/** Demo vaults: project → environments[] → secrets[]. */
+const INITIAL_PROJECT_VAULTS = {
+  "p-default": {
+    vaultScope: VAULT_SCOPE_PRODUCT,
+    environments: [
+      {
+        id: "production",
+        label: "Production",
+        secrets: [
+          { key: "DATABASE_URL", type: "connection-string", isSecret: true, updated: "2026-05-08", health: "ok" },
+          { key: "STRIPE_SECRET_KEY", type: "api-key", isSecret: true, updated: "2026-02-08", health: "rotation-due" },
+          { key: "JWT_SECRET", type: "jwt-secret", isSecret: true, updated: "2026-04-01", health: "ok" },
+          { key: "API_BASE_URL", type: "string", isSecret: false, demoPlain: "https://api.myapp.io", updated: "2026-05-09", health: "ok" },
+          { key: "CDN_URL", type: "string", isSecret: false, demoPlain: "https://cdn.myapp.io", updated: "2026-05-09", health: "pending-sync" },
+          { key: "LOG_LEVEL", type: "string", isSecret: false, demoPlain: "info", updated: "2026-01-10", health: "ok" },
+        ],
+      },
+      {
+        id: "staging",
+        label: "Staging",
+        secrets: [
+          { key: "DATABASE_URL", type: "connection-string", isSecret: true, updated: "2026-05-07", health: "ok" },
+          { key: "STRIPE_SECRET_KEY", type: "api-key", isSecret: true, updated: "2026-04-20", health: "ok" },
+          { key: "JWT_SECRET", type: "jwt-secret", isSecret: true, updated: "2026-04-01", health: "ok" },
+          { key: "API_BASE_URL", type: "string", isSecret: false, demoPlain: "https://api-staging.myapp.io", updated: "2026-05-08", health: "ok" },
+        ],
+      },
+      {
+        id: "preview",
+        label: "Preview",
+        secrets: [
+          { key: "DATABASE_URL", type: "connection-string", isSecret: true, updated: "2026-05-06", health: "ok" },
+          { key: "API_BASE_URL", type: "string", isSecret: false, demoPlain: "https://feat-x.preview.myapp.io", updated: "2026-05-06", health: "ok" },
+          { key: "JWT_SECRET", type: "jwt-secret", isSecret: true, updated: "2026-05-05", health: "ok" },
+        ],
+      },
+      {
+        id: "development",
+        label: "Development",
+        secrets: [
+          { key: "DATABASE_URL", type: "connection-string", isSecret: true, updated: "2026-05-01", health: "ok" },
+          { key: "API_BASE_URL", type: "string", isSecret: false, demoPlain: "http://localhost:3000", updated: "2026-04-28", health: "ok" },
+          { key: "JWT_SECRET", type: "jwt-secret", isSecret: true, updated: "2026-04-15", health: "ok" },
+          { key: "LOG_LEVEL", type: "string", isSecret: false, demoPlain: "debug", updated: "2026-04-10", health: "ok" },
+          { key: "DEV_FLAGS", type: "string", isSecret: false, demoPlain: "hot_reload=1", updated: "2026-03-01", health: "ok" },
+        ],
+      },
+    ],
+  },
+  "p-payments": {
+    vaultScope: VAULT_SCOPE_PRODUCT,
+    environments: [
+      {
+        id: "production",
+        label: "Production",
+        secrets: [
+          { key: "DATABASE_URL", type: "connection-string", isSecret: true, updated: "2026-05-07", health: "ok" },
+          { key: "STRIPE_WEBHOOK_SECRET", type: "api-key", isSecret: true, updated: "2026-05-01", health: "ok" },
+          { key: "INTERNAL_API_KEY", type: "api-key", isSecret: true, updated: "2026-04-12", health: "ok" },
+          { key: "REDIS_URL", type: "connection-string", isSecret: true, updated: "2026-04-30", health: "ok" },
+          { key: "PAYMENTS_ENV", type: "string", isSecret: false, demoPlain: "production", updated: "2026-01-01", health: "ok" },
+        ],
+      },
+      {
+        id: "staging",
+        label: "Staging",
+        secrets: [
+          { key: "DATABASE_URL", type: "connection-string", isSecret: true, updated: "2026-05-05", health: "ok" },
+          { key: "STRIPE_WEBHOOK_SECRET", type: "api-key", isSecret: true, updated: "2026-04-28", health: "ok" },
+          { key: "INTERNAL_API_KEY", type: "api-key", isSecret: true, updated: "2026-04-10", health: "ok" },
+          { key: "PAYMENTS_ENV", type: "string", isSecret: false, demoPlain: "staging", updated: "2026-01-01", health: "ok" },
+        ],
+      },
+      {
+        id: "development",
+        label: "Development",
+        secrets: [
+          { key: "DATABASE_URL", type: "connection-string", isSecret: true, updated: "2026-04-01", health: "ok" },
+          { key: "INTERNAL_API_KEY", type: "api-key", isSecret: true, updated: "2026-04-01", health: "ok" },
+          { key: "PAYMENTS_ENV", type: "string", isSecret: false, demoPlain: "development", updated: "2026-01-01", health: "ok" },
+        ],
+      },
+    ],
+  },
+  "p-marketing": {
+    vaultScope: VAULT_SCOPE_PRODUCT,
+    environments: [
+      {
+        id: "production",
+        label: "Production",
+        secrets: [
+          { key: "NEXT_PUBLIC_SITE_URL", type: "string", isSecret: false, demoPlain: "https://www.acme.com", updated: "2026-05-08", health: "ok" },
+          { key: "CONTACT_FORM_SECRET", type: "api-key", isSecret: true, updated: "2026-04-01", health: "ok" },
+          { key: "ANALYTICS_ID", type: "string", isSecret: false, demoPlain: "G-XXXX", updated: "2026-03-15", health: "ok" },
+          { key: "PREVIEW_PASSWORD", type: "api-key", isSecret: true, updated: "2026-02-01", health: "ok" },
+        ],
+      },
+      {
+        id: "preview",
+        label: "Preview",
+        secrets: [
+          { key: "NEXT_PUBLIC_SITE_URL", type: "string", isSecret: false, demoPlain: "https://preview.acme.com", updated: "2026-05-07", health: "ok" },
+          { key: "CONTACT_FORM_SECRET", type: "api-key", isSecret: true, updated: "2026-04-01", health: "ok" },
+        ],
+      },
+    ],
+  },
+};
+
+const MOCK_GITHUB_REPOS = [
+  { id: "gh-1", fullName: "acme/payments-api", private: true, defaultBranch: "main" },
+  { id: "gh-2", fullName: "acme/marketing-site", private: false, defaultBranch: "main" },
+  { id: "gh-3", fullName: "acme/data-pipeline", private: true, defaultBranch: "develop" },
+  { id: "gh-4", fullName: "t1mm0/envault-ux", private: false, defaultBranch: "main" },
+];
+
+const MOCK_RENDER_SERVICES = [
+  { id: "rs-1", name: "payments-api-prod", envCount: 12, region: "Oregon" },
+  { id: "rs-2", name: "web-static", envCount: 4, region: "Frankfurt" },
+  { id: "rs-3", name: "worker-emails", envCount: 7, region: "Oregon" },
+];
+
+/** Parse pasted .env–style lines (KEY=value, optional export, # comments). */
+function parseEnvPaste(text) {
+  const out = [];
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const unquoted = line.replace(/^export\s+/i, "");
+    const eq = unquoted.indexOf("=");
+    if (eq < 1) continue;
+    let key = unquoted.slice(0, eq).trim();
+    let value = unquoted.slice(eq + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) out.push({ key, value, isSecret: /SECRET|KEY|TOKEN|PASSWORD|PASS|CRED/i.test(key) });
+  }
+  return out;
+}
+
 // ─── Main App ────────────────────────────────────────────────────────────────
 export default function App() {
-  const [view, setView] = useState("approvals");
+  const { mode, toggleMode } = useTheme();
+
+  useEffect(() => {
+    loadGoogleFontsOnce();
+  }, []);
+
+  const [projects, setProjects] = useState(INITIAL_PROJECTS);
+  const [currentProjectId, setCurrentProjectId] = useState(INITIAL_PROJECTS[0].id);
+  const [view, setView] = useState("workspace");
   const [pending, setPending] = useState(INITIAL_PENDING);
   const [rules, setRules] = useState(INITIAL_RULES);
   const [activity, setActivity] = useState(INITIAL_ACTIVITY);
@@ -172,10 +404,60 @@ export default function App() {
   const [rejectNote, setRejectNote] = useState("");
   const [toast, setToast] = useState(null);
   const [revealedKeys, setRevealedKeys] = useState({});
+  const [projectVaults, setProjectVaults] = useState(INITIAL_PROJECT_VAULTS);
+
+  const currentProject = projects.find(p => p.id === currentProjectId) ?? projects[0];
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const handleAddProjectComplete = ({ name, source, detail, keys }) => {
+    const id = `p-${Date.now()}`;
+    const k = keys.length;
+    const today = new Date().toISOString().slice(0, 10);
+    const devSecrets = wizardKeysToVaultSecrets(keys, today);
+    setProjectVaults(v => ({
+      ...v,
+      [id]: {
+        vaultScope: VAULT_SCOPE_PRODUCT,
+        environments: [{ id: "development", label: "Development", secrets: devSecrets }],
+      },
+    }));
+    setProjects(ps => [
+      ...ps,
+      {
+        id,
+        name,
+        slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "project",
+        source,
+        detail,
+        health: "ok",
+        stats: {
+          pendingApprovals: 0,
+          activeRules: 0,
+          vaultKeys: k,
+          lastEvent: "Created just now",
+        },
+      },
+    ]);
+    setCurrentProjectId(id);
+    const now = new Date().toISOString();
+    setActivity(a => [
+      {
+        id: `a-proj-${Date.now()}`,
+        ts: now,
+        type: "updated",
+        actor: "Tim",
+        msg: `Added project "${name}" (${k} environment variable${k !== 1 ? "s" : ""}) — ${detail}`,
+        env: "development",
+        icon: "📦",
+      },
+      ...a,
+    ]);
+    showToast(`Project "${name}" added — ${k} key${k !== 1 ? "s" : ""} seeded in Development.`);
+    setView("workspace");
   };
 
   const handleApprove = () => {
@@ -235,47 +517,105 @@ export default function App() {
   const toggleReveal = key => setRevealedKeys(r => ({ ...r, [key]: !r[key] }));
 
   return (
-    <div style={S.app}>
-      <style>{CSS}</style>
+    <div style={sx.app}>
+      <style>{globalAppCss}</style>
 
       {/* Header */}
-      <header style={S.header}>
-        <div style={S.logo}>
-          <div style={S.logoMark}>
+      <header style={sx.header}>
+        <div style={sx.logo}>
+          <div style={sx.logoMark}>
             <span style={{ fontSize: 14 }}>🔐</span>
           </div>
-          <span style={S.logoText}>EnVault</span>
-          <span style={S.logoBadge}>my-saas-app</span>
+          <span style={sx.logoText}>EnVault</span>
+          <div style={sx.projectSwitcher}>
+            <label htmlFor="project-select" style={sx.srOnly}>Active project</label>
+            <select
+              id="project-select"
+              value={currentProjectId}
+              onChange={e => setCurrentProjectId(e.target.value)}
+              style={sx.projectSelect}
+              aria-label="Active project"
+            >
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              style={sx.addProjectHeaderBtn}
+              onClick={() => setView("add-project")}
+              title="Add project"
+            >
+              +
+            </button>
+          </div>
         </div>
 
-        <nav style={S.nav}>
+        <nav style={sx.nav}>
           {[
+            { id: "workspace", label: "Workspace" },
             { id: "dashboard", label: "Overview" },
+            { id: "add-project", label: "Add project" },
             { id: "approvals", label: "Approvals", count: pending.length },
             { id: "rules",     label: "Auto-Rules" },
             { id: "activity",  label: "Activity" },
             { id: "vault",     label: "Vault" },
           ].map(n => (
-            <button key={n.id} style={{ ...S.navBtn, ...(view === n.id ? S.navBtnActive : {}) }}
+            <button key={n.id} style={{ ...sx.navBtn, ...(view === n.id ? sx.navBtnActive : {}) }}
               onClick={() => setView(n.id)}>
               {n.label}
-              {n.count > 0 && <span style={S.navBadge}>{n.count}</span>}
+              {n.count > 0 && <span style={sx.navBadge}>{n.count}</span>}
             </button>
           ))}
         </nav>
 
-        <div style={S.headerRight}>
-          <div style={S.envIndicator}>
-            <span style={{ ...S.envDot, background: "#f43f5e" }} />
+        <div style={sx.headerRight}>
+          <button
+            type="button"
+            style={sx.themeToggleBtn}
+            onClick={toggleMode}
+            title={mode === "light" ? "Switch to dark theme" : "Switch to light theme"}
+            aria-label={mode === "light" ? "Switch to dark theme" : "Switch to light theme"}
+          >
+            {mode === "light" ? "Dark" : "Light"}
+          </button>
+          <div style={sx.envIndicator}>
+            <span style={{ ...sx.envDot, background: "#f43f5e" }} />
             production
           </div>
-          <div style={S.avatar}>TW</div>
+          <div style={sx.avatar}>TW</div>
         </div>
       </header>
 
       {/* Main */}
-      <main style={S.main}>
-        {view === "dashboard"  && <DashboardView pending={pending} activity={activity} rules={rules} onNavigate={setView} />}
+      <main style={sx.main}>
+        {view === "workspace" && (
+          <WorkspaceView
+            projects={projects}
+            currentProjectId={currentProjectId}
+            pendingDemoCount={pending.length}
+            onNavigate={setView}
+            onSelectProject={setCurrentProjectId}
+            onOpenProjectOverview={id => {
+              setCurrentProjectId(id);
+              setView("dashboard");
+            }}
+            onAddProject={() => setView("add-project")}
+          />
+        )}
+        {view === "dashboard"  && (
+          <DashboardView
+            currentProject={currentProject}
+            pending={pending}
+            activity={activity}
+            rules={rules}
+            onNavigate={setView}
+            onAddProject={() => setView("add-project")}
+          />
+        )}
+        {view === "add-project" && (
+          <AddProjectView onComplete={handleAddProjectComplete} onCancel={() => setView("workspace")} />
+        )}
         {view === "approvals"  && (
           <ApprovalsView
             pending={pending} selected={selected} setSelected={setSelected}
@@ -287,33 +627,39 @@ export default function App() {
         )}
         {view === "rules"     && <RulesView rules={rules} toggleRule={toggleRule} deleteRule={deleteRule} />}
         {view === "activity"  && <ActivityView activity={activity} />}
-        {view === "vault"     && <VaultView />}
+        {view === "vault"     && (
+          <VaultView
+            projectId={currentProjectId}
+            projectName={currentProject.name}
+            projectVaults={projectVaults}
+          />
+        )}
       </main>
 
       {/* Approve Modal */}
       {showApproveModal && selected && (
         <Modal onClose={() => setShowApproveModal(false)}>
-          <div style={S.modalIcon}>✅</div>
-          <div style={S.modalTitle}>Confirm Approval</div>
-          <div style={S.modalSub}>
+          <div style={sx.modalIcon}>✅</div>
+          <div style={sx.modalTitle}>Confirm Approval</div>
+          <div style={sx.modalSub}>
             You're approving: <strong>{selected.title}</strong>
           </div>
-          <div style={S.impactRow}>
+          <div style={sx.impactRow}>
             <ImpactBadge level={selected.impact} />
             <span style={{ color: "#64748b", fontSize: 13 }}>
               Affects: {selected.affectedSystems.join(", ")}
             </span>
           </div>
           <div style={{ marginTop: 16 }}>
-            <label style={S.formLabel}>Note (optional)</label>
-            <textarea style={S.textarea} placeholder="Add a note for the audit log…"
+            <label style={sx.formLabel}>Note (optional)</label>
+            <textarea style={sx.textarea} placeholder="Add a note for the audit log…"
               value={approveNote} onChange={e => setApproveNote(e.target.value)} rows={3} />
           </div>
-          <div style={S.modalActions}>
-            <button style={S.btnGhost} onClick={() => setShowApproveModal(false)}>Cancel</button>
-            <button style={S.btnApprove} onClick={handleApprove}>Approve & Execute</button>
+          <div style={sx.modalActions}>
+            <button style={sx.btnGhost} onClick={() => setShowApproveModal(false)}>Cancel</button>
+            <button style={sx.btnApprove} onClick={handleApprove}>Approve & Execute</button>
           </div>
-          <div style={S.modalHint}>
+          <div style={sx.modalHint}>
             This action will be logged in the audit trail with your name and timestamp.
           </div>
         </Modal>
@@ -322,21 +668,21 @@ export default function App() {
       {/* Reject Modal */}
       {showRejectModal && selected && (
         <Modal onClose={() => setShowRejectModal(false)}>
-          <div style={S.modalIcon}>❌</div>
-          <div style={S.modalTitle}>Reject Action</div>
-          <div style={S.modalSub}>
+          <div style={sx.modalIcon}>❌</div>
+          <div style={sx.modalTitle}>Reject Action</div>
+          <div style={sx.modalSub}>
             Rejecting: <strong>{selected.title}</strong>
           </div>
           <div style={{ marginTop: 16 }}>
-            <label style={S.formLabel}>Reason (recommended)</label>
-            <textarea style={S.textarea} placeholder="Why are you rejecting this? Helps the team understand…"
+            <label style={sx.formLabel}>Reason (recommended)</label>
+            <textarea style={sx.textarea} placeholder="Why are you rejecting this? Helps the team understand…"
               value={rejectNote} onChange={e => setRejectNote(e.target.value)} rows={3} />
           </div>
-          <div style={S.modalActions}>
-            <button style={S.btnGhost} onClick={() => setShowRejectModal(false)}>Cancel</button>
-            <button style={S.btnReject} onClick={handleReject}>Reject</button>
+          <div style={sx.modalActions}>
+            <button style={sx.btnGhost} onClick={() => setShowRejectModal(false)}>Cancel</button>
+            <button style={sx.btnReject} onClick={handleReject}>Reject</button>
           </div>
-          <div style={S.modalHint}>
+          <div style={sx.modalHint}>
             The action will be cancelled and logged. You can re-trigger it from the Vault.
           </div>
         </Modal>
@@ -353,7 +699,7 @@ export default function App() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ ...S.toast, ...(toast.type === "warn" ? S.toastWarn : {}) }}>
+        <div style={{ ...sx.toast, ...(toast.type === "warn" ? sx.toastWarn : {}) }}>
           {toast.type === "warn" ? "⚠️" : "✅"} {toast.msg}
         </div>
       )}
@@ -361,18 +707,178 @@ export default function App() {
   );
 }
 
+// ─── Workspace (fleet) ───────────────────────────────────────────────────────
+function WorkspaceView({
+  projects,
+  currentProjectId,
+  pendingDemoCount,
+  onNavigate,
+  onSelectProject,
+  onOpenProjectOverview,
+  onAddProject,
+}) {
+  const fleetPending = projects.reduce((s, p) => s + (p.stats?.pendingApprovals ?? 0), 0);
+  const fleetKeys = projects.reduce((s, p) => s + (p.stats?.vaultKeys ?? 0), 0);
+  const fleetRulesRollup = projects.reduce((s, p) => s + (p.stats?.activeRules ?? 0), 0);
+  const attentionProjects = projects.filter(p => p.health !== "ok").length;
+
+  return (
+    <div style={sx.viewPad}>
+      <div style={sx.overviewTop}>
+        <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+          <PageHeader
+            title="Workspace"
+            sub="Fleet view — scan every linked project before you drill into approvals, vault, or rules for a single app."
+          />
+        </div>
+        <button type="button" style={sx.btnPrimaryOutline} onClick={onAddProject}>
+          + Add project
+        </button>
+      </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <button type="button" style={{ ...sx.viewAllBtn, fontSize: 13 }} onClick={() => onNavigate("dashboard")}>
+          ← Project overview ({projects.find(p => p.id === currentProjectId)?.name ?? "—"})
+        </button>
+      </div>
+
+      <p style={sx.workspaceHint}>
+        Roll-up numbers below are mocked per-project stats for navigation; the shared <strong>Approvals</strong> queue in this prototype
+        ({pendingDemoCount} items) stays global — a future backend attaches actions to projects.
+      </p>
+
+      <div style={{ ...sx.statGrid, marginBottom: 24 }} className="statGrid4">
+        <StatCard label="Projects linked" value={projects.length} accent="#3b82f6"
+          sub="Repos, paste imports, Renderer services" />
+        <StatCard label="Fleet pending" value={fleetPending} accent="#f97316"
+          sub={`${attentionProjects} project${attentionProjects !== 1 ? "s need" : " needs"} attention`}
+          onClick={() => onNavigate("approvals")} />
+        <StatCard label="Active auto-rules" value={fleetRulesRollup} accent="#10b981"
+          sub="Per-project rule counts (mock rollup)" />
+        <StatCard label="Indexed secrets (all)" value={fleetKeys} accent="#8b5cf6"
+          sub="Keys across vault snapshots" />
+      </div>
+
+      <div style={sx.sectionRow}>
+        <SectionTitle>Projects</SectionTitle>
+        <button style={sx.viewAllBtn} onClick={() => onNavigate("approvals")}>Approvals ({pendingDemoCount}) →</button>
+      </div>
+
+      <div className="workspaceFleetGrid">
+        {projects.map(p => (
+          <div
+            key={p.id}
+            style={{
+              ...sx.projectFleetCard,
+              ...(p.health === "error" ? sx.projectFleetCardError : {}),
+              ...(p.health === "attention" ? sx.projectFleetCardAttention : {}),
+            }}
+          >
+            <div style={sx.projectFleetHeader}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <h2 style={sx.projectFleetName}>{p.name}</h2>
+                  {p.id === currentProjectId && (
+                    <span style={sx.activeProjectBadge}>Active in header</span>
+                  )}
+                </div>
+                <div style={sx.projectFleetDetail}>{p.detail}</div>
+              </div>
+              <ProjectHealthBadge health={p.health} />
+            </div>
+
+            <div style={sx.projectFleetStatsRow}>
+              <span style={sx.projectFleetStatChip}>
+                {p.stats?.pendingApprovals ?? 0} pending
+              </span>
+              <span style={sx.projectFleetStatChip}>
+                {p.stats?.activeRules ?? 0} auto-rules
+              </span>
+              <span style={sx.projectFleetStatChip}>
+                {p.stats?.vaultKeys ?? 0} keys
+              </span>
+            </div>
+
+            <div style={sx.projectFleetLastLine}>{p.stats?.lastEvent ?? "No recent activity"}</div>
+
+            <div style={sx.projectFleetActions}>
+              <button
+                type="button"
+                style={sx.btnPrimaryOutline}
+                onClick={() => onOpenProjectOverview(p.id)}
+              >
+                Open overview
+              </button>
+              <button
+                type="button"
+                style={sx.btnFleetSecondary}
+                onClick={() => {
+                  onSelectProject(p.id);
+                  onNavigate("vault");
+                }}
+              >
+                Vault
+              </button>
+              {(p.stats?.pendingApprovals ?? 0) > 0 && (
+                <button
+                  type="button"
+                  style={sx.btnFleetSecondary}
+                  onClick={() => {
+                    onSelectProject(p.id);
+                    onNavigate("approvals");
+                  }}
+                >
+                  Queue
+                </button>
+              )}
+              <button
+                type="button"
+                style={sx.btnFleetSecondary}
+                onClick={() => onSelectProject(p.id)}
+              >
+                Set active
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProjectHealthBadge({ health }) {
+  const h = HEALTH_META[health] ?? HEALTH_META.ok;
+  return (
+    <div style={sx.projectFleetHealth}>
+      <span style={{ ...sx.healthDot, background: h.dot }} aria-hidden />
+      <span>{h.label}</span>
+    </div>
+  );
+}
+
 // ─── Dashboard View ───────────────────────────────────────────────────────────
-function DashboardView({ pending, activity, rules, onNavigate }) {
+function DashboardView({ currentProject, pending, activity, rules, onNavigate, onAddProject }) {
   const approved = activity.filter(a => a.type === "approved").length;
   const rejected = activity.filter(a => a.type === "rejected").length;
   const autoApproved = activity.filter(a => a.type === "approved" && a.actor === "Auto-Rule").length;
 
   return (
-    <div style={S.viewPad}>
-      <PageHeader title="Overview" sub="Your trust dashboard — everything EnVault is doing, at a glance" />
+    <div style={sx.viewPad}>
+      <div style={sx.overviewTop}>
+        <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+          <PageHeader
+            title="Overview"
+            eyebrow={`Active project · ${currentProject.name}`}
+            sub="Trust dashboard for the project selected in the header — approvals, rules, and activity at a glance."
+          />
+        </div>
+        <button type="button" style={sx.btnPrimaryOutline} onClick={onAddProject}>
+          + Add project
+        </button>
+      </div>
 
       {/* Stat cards */}
-      <div style={S.statGrid}>
+      <div style={sx.statGrid} className="statGrid4">
         <StatCard label="Pending Approvals" value={pending.length} accent="#f97316"
           sub="Awaiting your review" onClick={() => onNavigate("approvals")} />
         <StatCard label="Auto-approved (7d)" value={autoApproved} accent="#10b981"
@@ -384,16 +890,16 @@ function DashboardView({ pending, activity, rules, onNavigate }) {
       </div>
 
       {/* Pending preview */}
-      <div style={S.sectionRow}>
+      <div style={sx.sectionRow}>
         <SectionTitle>Pending Your Approval</SectionTitle>
-        <button style={S.viewAllBtn} onClick={() => onNavigate("approvals")}>View all →</button>
+        <button style={sx.viewAllBtn} onClick={() => onNavigate("approvals")}>View all →</button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {pending.slice(0, 3).map(item => (
           <MiniApprovalCard key={item.id} item={item} onClick={() => { onNavigate("approvals"); }} />
         ))}
         {pending.length === 0 && (
-          <div style={S.emptyState}>
+          <div style={sx.emptyState}>
             <div style={{ fontSize: 28 }}>✅</div>
             <div>All caught up — nothing pending approval</div>
           </div>
@@ -402,48 +908,54 @@ function DashboardView({ pending, activity, rules, onNavigate }) {
 
       {/* Active rules */}
       <div style={{ marginTop: 32 }}>
-        <div style={S.sectionRow}>
+        <div style={sx.sectionRow}>
           <SectionTitle>Active Auto-Approve Rules</SectionTitle>
-          <button style={S.viewAllBtn} onClick={() => onNavigate("rules")}>Manage →</button>
+          <button style={sx.viewAllBtn} onClick={() => onNavigate("rules")}>Manage →</button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {rules.filter(r => r.active).map(r => (
-            <div key={r.id} style={S.miniRuleCard}>
-              <span style={S.ruleIndicatorDot} />
+            <div key={r.id} style={sx.miniRuleCard}>
+              <span style={sx.ruleIndicatorDot} />
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#0f1e3d" }}>{r.name}</div>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{r.description}</div>
+                <div style={sx.ruleCardTitle}>{r.name}</div>
+                <div style={sx.ruleCardDesc}>{r.description}</div>
               </div>
-              <div style={S.ruleUsage}>Used {r.usedCount}×</div>
+              <div style={sx.ruleUsage}>Used {r.usedCount}×</div>
             </div>
           ))}
         </div>
       </div>
+
+      <div style={sx.calloutInfo}>
+        <div style={sx.calloutInfoTitle}>Add another project</div>
+        <div style={{ ...sx.calloutInfoText, marginBottom: 12 }}>
+          Link GitHub, paste Render-style KEY=value pairs, or connect Render for deploy sync — demo flows only, no real OAuth.
+        </div>
+        <button type="button" style={sx.btnGhost} onClick={onAddProject}>Add project →</button>
+      </div>
     </div>
   );
 }
-
-// ─── Approvals View ───────────────────────────────────────────────────────────
 function ApprovalsView({ pending, selected, setSelected, revealedKeys, toggleReveal, onApprove, onReject, onCreateRule }) {
   return (
-    <div style={S.splitLayout}>
+    <div style={sx.splitLayout} className="splitResponsive">
       {/* Left: Queue */}
-      <div style={S.queuePanel}>
-        <div style={S.queueHeader}>
+      <div style={sx.queuePanel}>
+        <div style={sx.queueHeader}>
           <div>
-            <div style={S.queueTitle}>Approval Queue</div>
-            <div style={S.queueSub}>{pending.length} action{pending.length !== 1 ? "s" : ""} awaiting your review</div>
+            <div style={sx.queueTitle}>Approval Queue</div>
+            <div style={sx.queueSub}>{pending.length} action{pending.length !== 1 ? "s" : ""} awaiting your review</div>
           </div>
         </div>
 
         {pending.length === 0 ? (
-          <div style={{ ...S.emptyState, padding: "60px 24px" }}>
+          <div style={{ ...sx.emptyState, padding: "60px 24px" }}>
             <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
             <div style={{ fontWeight: 600, color: "#0f1e3d" }}>All clear</div>
             <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>No pending approvals</div>
           </div>
         ) : (
-          <div style={S.queueList}>
+          <div style={sx.queueList}>
             {pending.map(item => (
               <ApprovalCard key={item.id} item={item}
                 isSelected={selected?.id === item.id}
@@ -454,9 +966,9 @@ function ApprovalsView({ pending, selected, setSelected, revealedKeys, toggleRev
       </div>
 
       {/* Right: Detail */}
-      <div style={S.detailPanel}>
+      <div style={sx.detailPanel}>
         {!selected ? (
-          <div style={{ ...S.emptyState, height: "100%" }}>
+          <div style={{ ...sx.emptyState, height: "100%" }}>
             <div style={{ fontSize: 32, opacity: 0.4 }}>←</div>
             <div style={{ color: "#94a3b8", fontSize: 14 }}>Select an action to review</div>
           </div>
@@ -479,21 +991,21 @@ function ApprovalCard({ item, isSelected, onClick }) {
   const tm = TYPE_META[item.type];
   const im = IMPACT_META[item.impact];
   return (
-    <div style={{ ...S.approvalCard, ...(isSelected ? S.approvalCardActive : {}) }} onClick={onClick}>
-      <div style={S.approvalCardTop}>
-        <span style={{ ...S.typePill, color: tm.color, background: `${tm.color}15`, border: `1px solid ${tm.color}30` }}>
+    <div style={{ ...sx.approvalCard, ...(isSelected ? sx.approvalCardActive : {}) }} onClick={onClick}>
+      <div style={sx.approvalCardTop}>
+        <span style={{ ...sx.typePill, color: tm.color, background: `${tm.color}15`, border: `1px solid ${tm.color}30` }}>
           {tm.icon} {tm.label}
         </span>
-        <span style={{ ...S.impactPill, color: im.color, background: im.bg, border: `1px solid ${im.border}` }}>
+        <span style={{ ...sx.impactPill, color: im.color, background: im.bg, border: `1px solid ${im.border}` }}>
           {im.label}
         </span>
       </div>
-      <div style={S.approvalCardTitle}>{item.title}</div>
-      <div style={S.approvalCardMeta}>
-        <span style={{ ...S.envTag, background: `${ENV_COLOR[item.env]}15`, color: ENV_COLOR[item.env] }}>
+      <div style={sx.approvalCardTitle}>{item.title}</div>
+      <div style={sx.approvalCardMeta}>
+        <span style={{ ...sx.envTag, background: `${ENV_COLOR[item.env]}15`, color: ENV_COLOR[item.env] }}>
           {item.env}
         </span>
-        <span style={S.approvalCardTime}>{fmtTime(item.triggeredAt)}</span>
+        <span style={sx.approvalCardTime}>{fmtTime(item.triggeredAt)}</span>
       </div>
     </div>
   );
@@ -504,19 +1016,19 @@ function ApprovalDetail({ item, revealedKeys, toggleReveal, onApprove, onReject,
   const im = IMPACT_META[item.impact];
 
   return (
-    <div style={S.detail}>
+    <div style={sx.detail}>
       {/* Header */}
-      <div style={S.detailHeader}>
-        <div style={S.detailHeaderTop}>
-          <span style={{ ...S.typePill, color: tm.color, background: `${tm.color}15`, border: `1px solid ${tm.color}30`, fontSize: 12 }}>
+      <div style={sx.detailHeader}>
+        <div style={sx.detailHeaderTop}>
+          <span style={{ ...sx.typePill, color: tm.color, background: `${tm.color}15`, border: `1px solid ${tm.color}30`, fontSize: 12 }}>
             {tm.icon} {tm.label}
           </span>
           <ImpactBadge level={item.impact} />
         </div>
-        <div style={S.detailTitle}>{item.title}</div>
-        <div style={S.detailDesc}>{item.description}</div>
+        <div style={sx.detailTitle}>{item.title}</div>
+        <div style={sx.detailDesc}>{item.description}</div>
 
-        <div style={S.metaRow}>
+        <div style={sx.metaRow}>
           <MetaChip label="Environment" value={item.env} color={ENV_COLOR[item.env]} />
           <MetaChip label="Triggered by" value={item.triggeredBy} />
           <MetaChip label="Provider" value={item.provider} />
@@ -525,37 +1037,37 @@ function ApprovalDetail({ item, revealedKeys, toggleReveal, onApprove, onReject,
       </div>
 
       {/* Affected systems */}
-      <div style={S.section}>
-        <div style={S.sectionLabel}>Affected systems</div>
+      <div style={sx.section}>
+        <div style={sx.sectionLabel}>Affected systems</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {item.affectedSystems.map(s => (
-            <span key={s} style={S.systemTag}>{s}</span>
+            <span key={s} style={sx.systemTag}>{s}</span>
           ))}
         </div>
       </div>
 
       {/* Change diff */}
-      <div style={S.section}>
-        <div style={S.sectionLabel}>
+      <div style={sx.section}>
+        <div style={sx.sectionLabel}>
           Proposed changes — {item.changes.length} key{item.changes.length !== 1 ? "s" : ""}
         </div>
-        <div style={S.diffTable}>
-          <div style={S.diffHeader}>
+        <div style={sx.diffTable}>
+          <div style={sx.diffHeader}>
             <span>Key</span><span>Action</span><span>Before</span><span>After</span>
           </div>
           {item.changes.map((c, i) => {
             const revealed = revealedKeys[`${item.id}-${c.key}`];
             return (
-              <div key={i} style={{ ...S.diffRow, ...(c.action === "remove" ? S.diffRowRemove : c.action === "add" ? S.diffRowAdd : c.action === "rotate" || c.action === "generate" ? S.diffRowGenerate : S.diffRowUpdate) }}>
-                <span style={S.diffKey}>{c.key}</span>
-                <span style={{ ...S.actionBadge, ...ACTION_STYLE[c.action] }}>{c.action}</span>
-                <span style={S.diffVal}>
+              <div key={i} style={{ ...sx.diffRow, ...(c.action === "remove" ? sx.diffRowRemove : c.action === "add" ? sx.diffRowAdd : c.action === "rotate" || c.action === "generate" ? sx.diffRowGenerate : sx.diffRowUpdate) }}>
+                <span style={sx.diffKey}>{c.key}</span>
+                <span style={{ ...sx.actionBadge, ...ACTION_STYLE[c.action] }}>{c.action}</span>
+                <span style={sx.diffVal}>
                   {c.before ? (c.isSecret && !revealed ? maskVal(c.before) : c.before) : <em style={{ color: "#94a3b8" }}>—</em>}
                 </span>
-                <span style={{ ...S.diffVal, display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ ...sx.diffVal, display: "flex", alignItems: "center", gap: 4 }}>
                   {c.after ? (c.isSecret && !revealed ? maskVal(c.after) : c.after) : <em style={{ color: "#94a3b8" }}>—</em>}
                   {c.isSecret && (
-                    <button style={S.revealBtn} onClick={() => toggleReveal(`${item.id}-${c.key}`)}>
+                    <button style={sx.revealBtn} onClick={() => toggleReveal(`${item.id}-${c.key}`)}>
                       {revealed ? "hide" : "reveal"}
                     </button>
                   )}
@@ -568,19 +1080,19 @@ function ApprovalDetail({ item, revealedKeys, toggleReveal, onApprove, onReject,
 
       {/* Rotation details */}
       {item.rotationDetails && (
-        <div style={S.section}>
-          <div style={S.sectionLabel}>Rotation details</div>
-          <div style={S.rotationCard}>
-            <div style={S.rotationRow}><span>Provider</span><strong>{item.rotationDetails.provider}</strong></div>
-            <div style={S.rotationRow}><span>Last rotated</span><strong>{item.rotationDetails.lastRotated}</strong></div>
-            <div style={S.rotationRow}><span>Age</span><strong style={{ color: "#f43f5e" }}>{item.rotationDetails.daysOld} days</strong></div>
-            <div style={S.rotationRow}><span>Grace period</span><strong>{item.rotationDetails.gracePeriod}</strong></div>
+        <div style={sx.section}>
+          <div style={sx.sectionLabel}>Rotation details</div>
+          <div style={sx.rotationCard}>
+            <div style={sx.rotationRow}><span>Provider</span><strong>{item.rotationDetails.provider}</strong></div>
+            <div style={sx.rotationRow}><span>Last rotated</span><strong>{item.rotationDetails.lastRotated}</strong></div>
+            <div style={sx.rotationRow}><span>Age</span><strong style={{ color: "#f43f5e" }}>{item.rotationDetails.daysOld} days</strong></div>
+            <div style={sx.rotationRow}><span>Grace period</span><strong>{item.rotationDetails.gracePeriod}</strong></div>
           </div>
         </div>
       )}
 
       {/* Trust notice */}
-      <div style={S.trustNotice}>
+      <div style={sx.trustNotice}>
         <span style={{ fontSize: 16 }}>🔒</span>
         <div>
           <div style={{ fontWeight: 600, fontSize: 13, color: "#0f1e3d" }}>Your approval is required before anything executes.</div>
@@ -591,14 +1103,14 @@ function ApprovalDetail({ item, revealedKeys, toggleReveal, onApprove, onReject,
       </div>
 
       {/* Actions */}
-      <div style={S.actionRow}>
-        <button style={S.btnReject} onClick={onReject}>Reject</button>
+      <div style={sx.actionRow}>
+        <button style={sx.btnReject} onClick={onReject}>Reject</button>
         {item.canAutoApprove && (
-          <button style={S.btnRule} onClick={() => onCreateRule(item)}>
+          <button style={sx.btnRule} onClick={() => onCreateRule(item)}>
             + Auto-approve rule
           </button>
         )}
-        <button style={S.btnApprove} onClick={onApprove}>
+        <button style={sx.btnApprove} onClick={onApprove}>
           Approve & Execute →
         </button>
       </div>
@@ -622,13 +1134,13 @@ const maskVal = v => {
 // ─── Rules View ───────────────────────────────────────────────────────────────
 function RulesView({ rules, toggleRule, deleteRule }) {
   return (
-    <div style={S.viewPad}>
+    <div style={sx.viewPad}>
       <PageHeader
         title="Auto-Approve Rules"
         sub="Define when EnVault can act automatically — without asking you each time"
       />
 
-      <div style={S.rulesExplainer}>
+      <div style={sx.rulesExplainer}>
         <span style={{ fontSize: 18 }}>💡</span>
         <div>
           <strong>You're always in control.</strong> Rules let you delegate low-risk, repetitive approvals to EnVault.
@@ -664,20 +1176,268 @@ function RulesView({ rules, toggleRule, deleteRule }) {
   );
 }
 
-function RuleCard({ rule, onToggle, onDelete }) {
+function AddProjectView({ onComplete, onCancel }) {
+  const [step, setStep] = useState(1);
+  const [method, setMethod] = useState(null);
+  const [githubQuery, setGithubQuery] = useState("");
+  const [selectedRepo, setSelectedRepo] = useState(null);
+  const [pasteText, setPasteText] = useState("");
+  const [renderConnected, setRenderConnected] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
+  const [projectName, setProjectName] = useState("");
+
+  const pickMethod = (m) => {
+    setMethod(m);
+    setSelectedRepo(null);
+    setSelectedService(null);
+    setStep(2);
+  };
+
+  const filteredRepos = MOCK_GITHUB_REPOS.filter(r =>
+    r.fullName.toLowerCase().includes(githubQuery.trim().toLowerCase()));
+
+  const keysForReview = () => {
+    if (method === "github" && selectedRepo) {
+      return [
+        { key: "NODE_ENV", value: "development", isSecret: false },
+        { key: "DATABASE_URL", value: "postgresql://user:•••@cluster/db", isSecret: true },
+        { key: "API_SECRET_KEY", value: "sk_live_••••••••", isSecret: true },
+        { key: "PUBLIC_APP_URL", value: "https://" + selectedRepo.fullName.replace(/\//g, "-") + ".example.com", isSecret: false },
+        { key: "NEXTAUTH_SECRET", value: "generated_••••••••", isSecret: true },
+      ];
+    }
+    if (method === "paste") return parseEnvPaste(pasteText);
+    if (method === "render" && selectedService) {
+      const labels = [
+        { key: "NODE_ENV", value: "production", isSecret: false },
+        { key: "PORT", value: "10000", isSecret: false },
+        { key: "DATABASE_URL", value: "postgresql://••••••••", isSecret: true },
+        { key: "SESSION_SECRET", value: "••••••••", isSecret: true },
+        { key: "STRIPE_SECRET_KEY", value: "••••••••", isSecret: true },
+        { key: "RENDER_EXTERNAL_URL", value: "https://" + selectedService.name + ".onrender.com", isSecret: false },
+        { key: "REDIS_URL", value: "••••••••", isSecret: true },
+        { key: "SMTP_URL", value: "••••••••", isSecret: true },
+        { key: "WEBHOOK_SECRET", value: "••••••••", isSecret: true },
+      ];
+      return labels.slice(0, Math.min(selectedService.envCount, labels.length));
+    }
+    return [];
+  };
+
+  const goToReview = () => {
+    const keys = keysForReview();
+    if (method === "github") {
+      if (!selectedRepo) return;
+      setProjectName(selectedRepo.fullName.split("/").pop());
+    } else if (method === "paste") {
+      if (keys.length === 0) return;
+      setProjectName(prev => prev.trim() || `env-import-${keys.length}-keys`);
+    } else if (method === "render") {
+      if (!renderConnected || !selectedService) return;
+      setProjectName(selectedService.name);
+    }
+    setStep(3);
+  };
+
+  const handleSubmit = () => {
+    const name = projectName.trim();
+    const keys = keysForReview();
+    if (!name || keys.length === 0) return;
+    let detail = "";
+    if (method === "github") detail = `GitHub · ${selectedRepo.fullName}`;
+    else if (method === "paste") detail = "Pasted KEY=value list";
+    else if (method === "render") detail = `Render · ${selectedService.name} (${selectedService.region})`;
+    onComplete({ name, source: method, detail, keys });
+  };
+
+  const pasteParsed = parseEnvPaste(pasteText);
+
+  const keysPreview = step === 3 ? keysForReview() : [];
+
   return (
-    <div style={{ ...S.ruleCard, opacity: rule.active ? 1 : 0.6 }}>
-      <div style={S.ruleCardLeft}>
-        <div style={S.ruleCardTitle}>{rule.name}</div>
-        <div style={S.ruleCardDesc}>{rule.description}</div>
-        <div style={S.ruleCardMeta}>
-          {rule.lastUsed && <span style={S.ruleMetaChip}>Last used {fmtTime(rule.lastUsed)}</span>}
-          <span style={S.ruleMetaChip}>Used {rule.usedCount}× total</span>
+    <div style={sx.viewPad}>
+      <div style={sx.addProjectBar}>
+        <button type="button" style={sx.btnGhost} onClick={onCancel}>← Back</button>
+        <div style={sx.stepDots} aria-hidden>
+          {[1, 2, 3].map(s => (
+            <span key={s} style={{ ...sx.stepDot, ...(step >= s ? sx.stepDotOn : {}) }} />
+          ))}
         </div>
       </div>
-      <div style={S.ruleCardRight}>
+
+      {step === 1 && (
+        <>
+          <PageHeader
+            title="Add a project"
+            sub="Bring a new app into EnVault — link GitHub, paste environment variables (like Render's editor), or connect Render for publish-time sync. Prototype: no real OAuth."
+          />
+          <div style={sx.pathGrid} className="pathGrid3">
+            <button type="button" style={sx.pathCard} onClick={() => pickMethod("github")}>
+              <span style={sx.pathIcon}>🐙</span>
+              <div style={sx.pathTitle}>GitHub repository</div>
+              <p style={sx.pathDesc}>Pick a repo you already granted EnVault. We'll attach the project and seed keys from your default environment (demo list).</p>
+              <span style={sx.pathCta}>Select repo →</span>
+            </button>
+            <button type="button" style={sx.pathCard} onClick={() => pickMethod("paste")}>
+              <span style={sx.pathIcon}>📋</span>
+              <div style={sx.pathTitle}>Paste KEY=value pairs</div>
+              <p style={sx.pathDesc}>Copy from Render, Railway, Vercel, or a local .env file. Same flow as pasting into a host's environment editor.</p>
+              <span style={sx.pathCta}>Paste keys →</span>
+            </button>
+            <button type="button" style={sx.pathCard} onClick={() => pickMethod("render")}>
+              <span style={sx.pathIcon}>◆</span>
+              <div style={sx.pathTitle}>Render</div>
+              <p style={sx.pathDesc}>Connect your Render account, choose a web service or worker, and import its environment for publishing &amp; rotation workflows.</p>
+              <span style={sx.pathCta}>Connect Render →</span>
+            </button>
+          </div>
+        </>
+      )}
+
+      {step === 2 && method === "github" && (
+        <>
+          <PageHeader title="Choose a GitHub repository" sub="Filtered from your connected organizations (mock data)." />
+          <input
+            type="search"
+            style={{ ...sx.formInput, maxWidth: 400, marginBottom: 16 }}
+            placeholder="Search repositories…"
+            value={githubQuery}
+            onChange={e => setGithubQuery(e.target.value)}
+            aria-label="Search GitHub repositories"
+          />
+          <div style={sx.repoList}>
+            {filteredRepos.map(r => (
+              <button
+                type="button"
+                key={r.id}
+                style={{ ...sx.repoRow, ...(selectedRepo?.id === r.id ? sx.repoRowActive : {}) }}
+                onClick={() => setSelectedRepo(r)}
+              >
+                <span style={sx.repoName}>{r.fullName}</span>
+                <span style={sx.repoMeta}>{r.private ? "Private" : "Public"} · {r.defaultBranch}</span>
+              </button>
+            ))}
+            {filteredRepos.length === 0 && <div style={sx.mutedBox}>No repos match that search.</div>}
+          </div>
+          <div style={sx.wizardActions}>
+            <button type="button" style={sx.btnGhost} onClick={() => { setStep(1); setMethod(null); }}>Change method</button>
+            <button type="button" style={sx.btnApprove} onClick={goToReview} disabled={!selectedRepo}>Continue</button>
+          </div>
+        </>
+      )}
+
+      {step === 2 && method === "paste" && (
+        <>
+          <PageHeader title="Paste environment variables" sub="Supports # comments, export FOO=bar, and quoted values." />
+          <textarea
+            style={{ ...sx.textarea, minHeight: 220, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}
+            placeholder={"DATABASE_URL=postgresql://localhost/mydb\nAPI_KEY=\nPUBLIC_APP_URL=http://localhost:3000"}
+            value={pasteText}
+            onChange={e => setPasteText(e.target.value)}
+            aria-label="Environment variables paste area"
+          />
+          <div style={sx.inlineHint}>{pasteParsed.length} key{pasteParsed.length !== 1 ? "s" : ""} detected</div>
+          <div style={sx.wizardActions}>
+            <button type="button" style={sx.btnGhost} onClick={() => { setStep(1); setMethod(null); }}>Change method</button>
+            <button type="button" style={sx.btnApprove} onClick={goToReview} disabled={pasteParsed.length === 0}>Continue</button>
+          </div>
+        </>
+      )}
+
+      {step === 2 && method === "render" && (
+        <>
+          <PageHeader title="Connect Render" sub="Prototype: simulate OAuth, then choose a service to import env from." />
+          {!renderConnected ? (
+            <div style={sx.renderConnectCard}>
+              <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6, marginBottom: 16 }}>
+                EnVault requests read access to environment variables on the services you select. Writes (sync on deploy) stay behind your approval queue.
+              </p>
+              <button type="button" style={sx.btnApprove} onClick={() => setRenderConnected(true)}>
+                Connect Render account (demo)
+              </button>
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: 10 }}>
+                Select a service
+              </div>
+              <div style={sx.repoList}>
+                {MOCK_RENDER_SERVICES.map(s => (
+                  <button
+                    type="button"
+                    key={s.id}
+                    style={{ ...sx.repoRow, ...(selectedService?.id === s.id ? sx.repoRowActive : {}) }}
+                    onClick={() => setSelectedService(s)}
+                  >
+                    <span style={sx.repoName}>{s.name}</span>
+                    <span style={sx.repoMeta}>{s.envCount} env vars · {s.region}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          <div style={sx.wizardActions}>
+            <button type="button" style={sx.btnGhost} onClick={() => { setStep(1); setMethod(null); setRenderConnected(false); setSelectedService(null); }}>Change method</button>
+            <button type="button" style={sx.btnApprove} onClick={goToReview} disabled={!renderConnected || !selectedService}>Continue</button>
+          </div>
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <PageHeader title="Review &amp; create" sub="Name your project and confirm imported keys — they'll land in development first; pushes to hosts stay gated." />
+          <div style={{ marginBottom: 16 }}>
+            <label style={sx.formLabel} htmlFor="proj-name">Project name</label>
+            <input
+              id="proj-name"
+              style={{ ...sx.formInput, maxWidth: 420 }}
+              value={projectName}
+              onChange={e => setProjectName(e.target.value)}
+            />
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: 10 }}>
+            Imported keys ({keysPreview.length})
+          </div>
+          <div style={sx.previewTable}>
+            <div style={sx.previewHead}><span>Key</span><span>Value preview</span></div>
+            {keysPreview.slice(0, 12).map((row) => (
+              <div key={row.key} style={sx.previewRow}>
+                <span style={sx.vaultKey}>{row.key}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#64748b" }}>
+                  {row.isSecret ? "••••••••" : row.value.slice(0, 48)}{(row.value.length > 48 ? "…" : "")}
+                </span>
+              </div>
+            ))}
+            {keysPreview.length > 12 && (
+              <div style={{ padding: "10px 14px", fontSize: 12, color: "#94a3b8" }}>+ {keysPreview.length - 12} more…</div>
+            )}
+          </div>
+          <div style={sx.wizardActions}>
+            <button type="button" style={sx.btnGhost} onClick={() => setStep(2)}>Back</button>
+            <button type="button" style={sx.btnApprove} onClick={handleSubmit} disabled={!projectName.trim() || keysPreview.length === 0}>
+              Add to vault
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RuleCard({ rule, onToggle, onDelete }) {
+  return (
+    <div style={{ ...sx.ruleCard, opacity: rule.active ? 1 : 0.6 }}>
+      <div style={sx.ruleCardLeft}>
+        <div style={sx.ruleCardTitle}>{rule.name}</div>
+        <div style={sx.ruleCardDesc}>{rule.description}</div>
+        <div style={sx.ruleCardMeta}>
+          {rule.lastUsed && <span style={sx.ruleMetaChip}>Last used {fmtTime(rule.lastUsed)}</span>}
+          <span style={sx.ruleMetaChip}>Used {rule.usedCount}× total</span>
+        </div>
+      </div>
+      <div style={sx.ruleCardRight}>
         <Toggle active={rule.active} onToggle={onToggle} />
-        <button style={S.deleteBtn} onClick={onDelete} title="Delete rule">✕</button>
+        <button style={sx.deleteBtn} onClick={onDelete} title="Delete rule">✕</button>
       </div>
     </div>
   );
@@ -685,8 +1445,17 @@ function RuleCard({ rule, onToggle, onDelete }) {
 
 function Toggle({ active, onToggle }) {
   return (
-    <div style={{ ...S.toggle, background: active ? "#10b981" : "#cbd5e1" }} onClick={onToggle}>
-      <div style={{ ...S.toggleThumb, transform: active ? "translateX(18px)" : "translateX(2px)" }} />
+    <div
+      role="switch"
+      aria-checked={active}
+      tabIndex={0}
+      style={{
+        ...sx.toggleTrack,
+        ...(active ? sx.toggleTrackOn : sx.toggleTrackOff),
+      }}
+      onClick={onToggle}
+    >
+      <div style={{ ...sx.toggleThumb, transform: active ? "translateX(18px)" : "translateX(2px)" }} />
     </div>
   );
 }
@@ -698,34 +1467,34 @@ function ActivityView({ activity }) {
   const filtered = filter === "all" ? activity : activity.filter(a => a.type === filter);
 
   return (
-    <div style={S.viewPad}>
+    <div style={sx.viewPad}>
       <PageHeader title="Activity Log" sub="Full transparency — every action EnVault has taken or queued, in order" />
 
-      <div style={S.filterRow}>
+      <div style={sx.filterRow}>
         {types.map(t => (
-          <button key={t} style={{ ...S.filterBtn, ...(filter === t ? S.filterBtnActive : {}) }}
+          <button key={t} style={{ ...sx.filterBtn, ...(filter === t ? sx.filterBtnActive : {}) }}
             onClick={() => setFilter(t)}>
             {t}
           </button>
         ))}
       </div>
 
-      <div style={S.activityList}>
+      <div style={sx.activityList}>
         {filtered.map((item, i) => (
-          <div key={item.id} style={S.activityItem}>
-            <div style={S.activityIconWrap}>
+          <div key={item.id} style={sx.activityItem}>
+            <div style={sx.activityIconWrap}>
               <span style={{ fontSize: 16 }}>{item.icon}</span>
-              {i < filtered.length - 1 && <div style={S.activityLine} />}
+              {i < filtered.length - 1 && <div style={sx.activityLine} />}
             </div>
-            <div style={S.activityContent}>
-              <div style={S.activityMsg}>{item.msg}</div>
-              <div style={S.activityMeta}>
-                <span style={{ ...S.envTag, background: `${ENV_COLOR[item.env] || "#64748b"}15`, color: ENV_COLOR[item.env] || "#64748b", fontSize: 11 }}>
+            <div style={sx.activityContent}>
+              <div style={sx.activityMsg}>{item.msg}</div>
+              <div style={sx.activityMeta}>
+                <span style={{ ...sx.envTag, background: `${ENV_COLOR[item.env] || "#64748b"}15`, color: ENV_COLOR[item.env] || "#64748b", fontSize: 11 }}>
                   {item.env}
                 </span>
-                <span style={{ ...S.activityType, ...ACTIVITY_TYPE_STYLE[item.type] }}>{item.type}</span>
-                <span style={S.activityTime}>{fmtTime(item.ts)}</span>
-                {item.actor && <span style={S.activityActor}>by {item.actor}</span>}
+                <span style={{ ...sx.activityType, ...ACTIVITY_TYPE_STYLE[item.type] }}>{item.type}</span>
+                <span style={sx.activityTime}>{fmtTime(item.ts)}</span>
+                {item.actor && <span style={sx.activityActor}>by {item.actor}</span>}
               </div>
             </div>
           </div>
@@ -745,48 +1514,135 @@ const ACTIVITY_TYPE_STYLE = {
 };
 
 // ─── Vault View ───────────────────────────────────────────────────────────────
-function VaultView() {
-  const secrets = [
-    { key: "DATABASE_URL",      env: "production", type: "connection-string", isSecret: true,  updated: "2026-05-08", health: "ok" },
-    { key: "STRIPE_SECRET_KEY", env: "production", type: "api-key",           isSecret: true,  updated: "2026-02-08", health: "rotation-due" },
-    { key: "JWT_SECRET",        env: "production", type: "jwt-secret",        isSecret: true,  updated: "2026-04-01", health: "ok" },
-    { key: "API_BASE_URL",      env: "production", type: "url",               isSecret: false, updated: "2026-05-09", health: "ok" },
-    { key: "CDN_URL",           env: "production", type: "url",               isSecret: false, updated: "2026-05-09", health: "pending-sync" },
-    { key: "LOG_LEVEL",         env: "production", type: "string",            isSecret: false, updated: "2026-01-10", health: "ok" },
-  ];
+function VaultSecretHealth({ health }) {
+  if (health === "rotation-due") {
+    return (
+      <span style={{ ...sx.healthBadge, background: "#fff7ed", color: "#f97316" }}>⚠ Rotation due</span>
+    );
+  }
+  if (health === "pending-sync") {
+    return (
+      <span style={{ ...sx.healthBadge, background: "#eff6ff", color: "#3b82f6" }}>⏳ Pending sync</span>
+    );
+  }
+  return <span style={{ ...sx.healthBadge, background: "#f0fdf4", color: "#16a34a" }}>● OK</span>;
+}
+
+function VaultView({ projectId, projectName, projectVaults }) {
+  const vault = projectVaults[projectId];
+  const environments = vault?.environments ?? [];
+  const [activeEnvId, setActiveEnvId] = useState(environments[0]?.id ?? "");
   const [revealed, setRevealed] = useState({});
 
+  useEffect(() => {
+    const first = vault?.environments?.[0]?.id ?? "";
+    setActiveEnvId(first);
+    setRevealed({});
+  }, [projectId, vault]);
+
+  const activeSlice = environments.find(e => e.id === activeEnvId) ?? environments[0];
+  const secrets = activeSlice?.secrets ?? [];
+  const revealPrefix = `${activeSlice?.id ?? "_"}:`;
+
   return (
-    <div style={S.viewPad}>
-      <PageHeader title="Vault — Production" sub="Read-only view. Changes are staged for your approval before committing." />
-      <div style={S.vaultTable}>
-        <div style={S.vaultHeader}>
-          <span>Key</span><span>Type</span><span>Value</span><span>Updated</span><span>Status</span>
+    <div style={sx.viewPad}>
+      <PageHeader
+        title="Vault"
+        eyebrow={`Project · ${projectName ?? "—"}`}
+        sub="Each project owns one vault. Switch environment tabs to inspect that slice — not a separate top-level vault."
+      />
+
+      <div style={sx.vaultScopeBanner} role="note">
+        <strong style={{ color: v("textPrimary") }}>Scope: project vault.</strong>{" "}
+        EnVault stores secrets under <strong style={{ fontFamily: v("fontMono") }}>{VAULT_SCOPE_PRODUCT}</strong>-level containment
+        and namespaces values by deployment environment (production, staging, preview, …) inside it.
+        A pure <strong>environment-first</strong> model (standalone vault per env only) would be a different UX — not shown here.
+      </div>
+
+      {environments.length === 0 ? (
+        <div style={sx.emptyState}>
+          <div style={{ fontSize: 28 }}>📭</div>
+          <div>No environments in this vault yet.</div>
         </div>
-        {secrets.map(s => (
-          <div key={s.key} style={S.vaultRow}>
-            <span style={S.vaultKey}>{s.key}</span>
-            <span style={S.vaultType}>{s.type}</span>
-            <span style={S.vaultVal}>
-              {s.isSecret ? (revealed[s.key] ? "sk_live_KJH12378akjs" : "••••••••••••••••") : "https://myapp.io"}
-              {s.isSecret && (
-                <button style={S.revealBtn} onClick={() => setRevealed(r => ({ ...r, [s.key]: !r[s.key] }))}>
-                  {revealed[s.key] ? "hide" : "reveal"}
-                </button>
-              )}
-            </span>
-            <span style={S.vaultDate}>{s.updated}</span>
-            <span>
-              {s.health === "ok"           && <span style={{ ...S.healthBadge, background: "#f0fdf4", color: "#16a34a" }}>● OK</span>}
-              {s.health === "rotation-due" && <span style={{ ...S.healthBadge, background: "#fff7ed", color: "#f97316" }}>⚠ Rotation due</span>}
-              {s.health === "pending-sync" && <span style={{ ...S.healthBadge, background: "#eff6ff", color: "#3b82f6" }}>⏳ Pending sync</span>}
-            </span>
+      ) : (
+        <>
+          <div style={sx.vaultEnvTabRow} role="tablist" aria-label="Vault environment">
+            {environments.map(env => (
+              <button
+                key={env.id}
+                type="button"
+                role="tab"
+                aria-selected={activeSlice?.id === env.id}
+                style={{
+                  ...sx.vaultEnvTab,
+                  ...(activeSlice?.id === env.id ? sx.vaultEnvTabActive : {}),
+                }}
+                onClick={() => {
+                  setActiveEnvId(env.id);
+                  setRevealed({});
+                }}
+              >
+                {env.label}
+                <span style={sx.vaultEnvTabCount}>{env.secrets.length}</span>
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
-      <div style={S.vaultNotice}>
-        🔒 Edits to production require approval before being pushed. Changes are staged and shown in your Approval Queue.
-      </div>
+
+          <div style={sx.vaultEnvTitle}>
+            {activeSlice?.label ?? "Environment"} slice ·{" "}
+            <span style={{ fontWeight: 400, fontFamily: v("fontMono"), color: v("textSubtle") }}>{vault?.vaultScope ?? VAULT_SCOPE_PRODUCT} scope</span>
+          </div>
+
+          <div style={sx.vaultTable}>
+            <div style={sx.vaultHeader}>
+              <span>Key</span><span>Type</span><span>Value</span><span>Updated</span><span>Status</span>
+            </div>
+            {secrets.length === 0 ? (
+              <div style={{ ...sx.emptyState, padding: 28, borderBottom: `1px solid ${v("borderHairline")}` }}>
+                No keys stored in this environment yet.
+              </div>
+            ) : (
+              secrets.map(s => (
+                <div key={`${activeSlice.id}-${s.key}`} style={sx.vaultRow}>
+                  <span style={sx.vaultKey}>{s.key}</span>
+                  <span style={sx.vaultType}>{s.type}</span>
+                  <span style={sx.vaultVal}>
+                    {s.isSecret ? (
+                      <>
+                        {revealed[`${revealPrefix}${s.key}`]
+                          ? "sk_demo_reveal_placeholder"
+                          : "••••••••••••••••"}
+                        <button
+                          style={sx.revealBtn}
+                          type="button"
+                          onClick={() =>
+                            setRevealed(r => ({
+                              ...r,
+                              [`${revealPrefix}${s.key}`]: !r[`${revealPrefix}${s.key}`],
+                            }))
+                          }
+                        >
+                          {revealed[`${revealPrefix}${s.key}`] ? "hide" : "reveal"}
+                        </button>
+                      </>
+                    ) : (
+                      s.demoPlain ?? "—"
+                    )}
+                  </span>
+                  <span style={sx.vaultDate}>{s.updated}</span>
+                  <VaultSecretHealth health={s.health ?? "ok"} />
+                </div>
+              ))
+            )}
+          </div>
+
+          <div style={sx.vaultNotice}>
+            🔒 Writes to{" "}
+            <strong>{activeSlice?.label?.toLowerCase() ?? "this environment"}</strong> still route through approvals.
+            Scoped by project vault + environment slice.
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -796,30 +1652,30 @@ function CreateRuleModal({ item, onSave, onClose }) {
   const [name, setName] = useState(`Auto-approve ${item.type} for ${item.env}`);
   return (
     <Modal onClose={onClose}>
-      <div style={S.modalIcon}>⚡</div>
-      <div style={S.modalTitle}>Create Auto-Approve Rule</div>
-      <div style={S.modalSub}>
+      <div style={sx.modalIcon}>⚡</div>
+      <div style={sx.modalTitle}>Create Auto-Approve Rule</div>
+      <div style={sx.modalSub}>
         EnVault will automatically approve actions like this in future — without asking you each time.
       </div>
       <div style={{ margin: "16px 0" }}>
-        <label style={S.formLabel}>Rule name</label>
-        <input style={S.formInput} value={name} onChange={e => setName(e.target.value)} />
+        <label style={sx.formLabel}>Rule name</label>
+        <input style={sx.formInput} value={name} onChange={e => setName(e.target.value)} />
       </div>
-      <div style={S.rulePreview}>
-        <div style={S.rulePreviewRow}><span>When action is</span><strong>{item.type}</strong></div>
-        <div style={S.rulePreviewRow}><span>And environment is</span><strong>{item.env}</strong></div>
-        <div style={S.rulePreviewRow}><span>And impact is at most</span><strong>{item.impact}</strong></div>
-        <div style={S.rulePreviewRow}><span>Then</span><strong style={{ color: "#10b981" }}>auto-approve</strong></div>
+      <div style={sx.rulePreview}>
+        <div style={sx.rulePreviewRow}><span>When action is</span><strong>{item.type}</strong></div>
+        <div style={sx.rulePreviewRow}><span>And environment is</span><strong>{item.env}</strong></div>
+        <div style={sx.rulePreviewRow}><span>And impact is at most</span><strong>{item.impact}</strong></div>
+        <div style={sx.rulePreviewRow}><span>Then</span><strong style={{ color: "#10b981" }}>auto-approve</strong></div>
       </div>
-      <div style={S.trustNotice}>
+      <div style={sx.trustNotice}>
         <span>⚠️</span>
         <div style={{ fontSize: 12, color: "#64748b" }}>
           Critical actions (production rotation, key generation) are always manually reviewed — rules cannot override this safety gate.
         </div>
       </div>
-      <div style={S.modalActions}>
-        <button style={S.btnGhost} onClick={onClose}>Cancel</button>
-        <button style={S.btnApprove} onClick={() => onSave(name)}>Create Rule</button>
+      <div style={sx.modalActions}>
+        <button style={sx.btnGhost} onClick={onClose}>Cancel</button>
+        <button style={sx.btnApprove} onClick={() => onSave(name)}>Create Rule</button>
       </div>
     </Modal>
   );
@@ -828,33 +1684,34 @@ function CreateRuleModal({ item, onSave, onClose }) {
 // ─── Reusable Components ──────────────────────────────────────────────────────
 function Modal({ children, onClose }) {
   return (
-    <div style={S.overlay} onClick={onClose}>
-      <div style={S.modal} onClick={e => e.stopPropagation()}>
+    <div style={sx.overlay} onClick={onClose}>
+      <div style={sx.modal} onClick={e => e.stopPropagation()}>
         {children}
       </div>
     </div>
   );
 }
 
-function PageHeader({ title, sub }) {
+function PageHeader({ title, sub, eyebrow }) {
   return (
     <div style={{ marginBottom: 28 }}>
-      <h1 style={S.pageTitle}>{title}</h1>
-      <p style={S.pageSub}>{sub}</p>
+      {eyebrow && <div style={sx.pageEyebrow}>{eyebrow}</div>}
+      <h1 style={sx.pageTitle}>{title}</h1>
+      <p style={sx.pageSub}>{sub}</p>
     </div>
   );
 }
 
 function SectionTitle({ children }) {
-  return <div style={{ fontWeight: 700, fontSize: 14, color: "#0f1e3d" }}>{children}</div>;
+  return <div style={sx.sectionTitle}>{children}</div>;
 }
 
 function StatCard({ label, value, accent, sub, onClick }) {
   return (
-    <div style={{ ...S.statCard, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
-      <div style={{ ...S.statValue, color: accent }}>{value}</div>
-      <div style={S.statLabel}>{label}</div>
-      <div style={S.statSub}>{sub}</div>
+    <div style={{ ...sx.statCard, cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
+      <div style={{ ...sx.statValue, color: accent }}>{value}</div>
+      <div style={sx.statLabel}>{label}</div>
+      <div style={sx.statSub}>{sub}</div>
     </div>
   );
 }
@@ -862,7 +1719,7 @@ function StatCard({ label, value, accent, sub, onClick }) {
 function ImpactBadge({ level }) {
   const im = IMPACT_META[level];
   return (
-    <span style={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600,
+    <span style={{ fontSize: 11, fontFamily: v("fontMono"), fontWeight: 600,
       padding: "3px 8px", borderRadius: 4, background: im.bg, color: im.color, border: `1px solid ${im.border}` }}>
       {im.label} impact
     </span>
@@ -871,9 +1728,9 @@ function ImpactBadge({ level }) {
 
 function MetaChip({ label, value, color }) {
   return (
-    <div style={S.metaChip}>
-      <span style={S.metaChipLabel}>{label}</span>
-      <span style={{ ...S.metaChipValue, ...(color ? { color } : {}) }}>{value}</span>
+    <div style={sx.metaChip}>
+      <span style={sx.metaChipLabel}>{label}</span>
+      <span style={{ ...sx.metaChipValue, ...(color ? { color } : {}) }}>{value}</span>
     </div>
   );
 }
@@ -882,189 +1739,18 @@ function MiniApprovalCard({ item, onClick }) {
   const tm = TYPE_META[item.type];
   const im = IMPACT_META[item.impact];
   return (
-    <div style={S.miniCard} onClick={onClick}>
-      <span style={{ ...S.typePill, color: tm.color, background: `${tm.color}15`, border: `1px solid ${tm.color}25`, fontSize: 11 }}>
+    <div style={sx.miniCard} onClick={onClick}>
+      <span style={{ ...sx.typePill, color: tm.color, background: `${tm.color}15`, border: `1px solid ${tm.color}25`, fontSize: 11 }}>
         {tm.icon} {tm.label}
       </span>
-      <span style={S.miniCardTitle}>{item.title}</span>
-      <span style={{ ...S.impactPill, color: im.color, background: im.bg, border: `1px solid ${im.border}`, fontSize: 10, marginLeft: "auto" }}>
+      <span style={sx.miniCardTitle}>{item.title}</span>
+      <span style={{ ...sx.impactPill, color: im.color, background: im.bg, border: `1px solid ${im.border}`, fontSize: 10, marginLeft: "auto" }}>
         {im.label}
       </span>
-      <span style={{ ...S.envTag, background: `${ENV_COLOR[item.env]}15`, color: ENV_COLOR[item.env], fontSize: 10 }}>
+      <span style={{ ...sx.envTag, background: `${ENV_COLOR[item.env]}15`, color: ENV_COLOR[item.env], fontSize: 10 }}>
         {item.env}
       </span>
     </div>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const S = {
-  app: { fontFamily: "'DM Sans', sans-serif", background: "#f8f7f4", minHeight: "100vh", display: "flex", flexDirection: "column", color: "#0f1e3d" },
-  header: { display: "flex", alignItems: "center", gap: 0, padding: "0 24px", height: 56, background: "#fff", borderBottom: "1px solid #e8edf5", boxShadow: "0 1px 0 #e8edf5", position: "sticky", top: 0, zIndex: 10, gap: 0 },
-  logo: { display: "flex", alignItems: "center", gap: 10, marginRight: 32 },
-  logoMark: { width: 32, height: 32, background: "#0f1e3d", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" },
-  logoText: { fontFamily: "'DM Serif Display', serif", fontSize: 18, fontWeight: 400, color: "#0f1e3d", letterSpacing: "-0.3px" },
-  logoBadge: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, padding: "2px 8px", background: "#f1f5f9", borderRadius: 4, color: "#64748b", border: "1px solid #e2e8f0" },
-  nav: { display: "flex", gap: 2, flex: 1 },
-  navBtn: { padding: "6px 14px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#64748b", fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", gap: 6, transition: "all .15s" },
-  navBtnActive: { background: "#f1f5f9", color: "#0f1e3d", fontWeight: 600 },
-  navBadge: { background: "#f97316", color: "#fff", fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 10, minWidth: 16, textAlign: "center" },
-  headerRight: { display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" },
-  envIndicator: { display: "flex", alignItems: "center", gap: 6, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#64748b", background: "#f8f7f4", padding: "4px 10px", borderRadius: 6, border: "1px solid #e2e8f0" },
-  envDot: { width: 7, height: 7, borderRadius: "50%", display: "inline-block" },
-  avatar: { width: 32, height: 32, borderRadius: "50%", background: "#0f1e3d", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 },
-
-  main: { flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" },
-
-  viewPad: { padding: "32px 36px", overflowY: "auto", height: "calc(100vh - 56px)" },
-  pageTitle: { fontFamily: "'DM Serif Display', serif", fontSize: 26, fontWeight: 400, color: "#0f1e3d", marginBottom: 4 },
-  pageSub: { fontSize: 14, color: "#64748b" },
-
-  statGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 },
-  statCard: { background: "#fff", borderRadius: 12, padding: "20px 24px", border: "1px solid #e8edf5", boxShadow: "0 1px 3px rgba(0,0,0,.04)", transition: "box-shadow .15s" },
-  statValue: { fontFamily: "'DM Serif Display', serif", fontSize: 36, fontWeight: 400, lineHeight: 1 },
-  statLabel: { fontWeight: 600, fontSize: 13, color: "#0f1e3d", marginTop: 8 },
-  statSub: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
-
-  sectionRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  viewAllBtn: { fontSize: 12, color: "#3b82f6", background: "none", border: "none", cursor: "pointer", fontWeight: 600, fontFamily: "'DM Sans', sans-serif" },
-
-  miniCard: { display: "flex", alignItems: "center", gap: 8, background: "#fff", borderRadius: 8, padding: "10px 14px", border: "1px solid #e8edf5", cursor: "pointer", fontSize: 13, transition: "border-color .15s" },
-  miniCardTitle: { fontWeight: 500, fontSize: 13, color: "#0f1e3d", flex: 1 },
-
-  miniRuleCard: { display: "flex", alignItems: "center", gap: 12, background: "#fff", borderRadius: 8, padding: "10px 14px", border: "1px solid #e8edf5" },
-  ruleIndicatorDot: { width: 8, height: 8, borderRadius: "50%", background: "#10b981", flexShrink: 0 },
-  ruleUsage: { fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", color: "#94a3b8", marginLeft: "auto", whiteSpace: "nowrap" },
-
-  // Approvals split
-  splitLayout: { display: "grid", gridTemplateColumns: "360px 1fr", height: "calc(100vh - 56px)", overflow: "hidden" },
-  queuePanel: { borderRight: "1px solid #e8edf5", background: "#fff", display: "flex", flexDirection: "column", overflow: "hidden" },
-  queueHeader: { padding: "20px 20px 12px", borderBottom: "1px solid #f1f5f9" },
-  queueTitle: { fontFamily: "'DM Serif Display', serif", fontSize: 18, color: "#0f1e3d" },
-  queueSub: { fontSize: 12, color: "#94a3b8", marginTop: 3 },
-  queueList: { overflowY: "auto", flex: 1, padding: "12px 12px" },
-
-  approvalCard: { padding: "14px 16px", borderRadius: 10, border: "1px solid #f1f5f9", marginBottom: 8, cursor: "pointer", background: "#fdfdfd", transition: "all .15s" },
-  approvalCardActive: { border: "1px solid #3b82f6", background: "#eff6ff" },
-  approvalCardTop: { display: "flex", gap: 6, marginBottom: 8 },
-  approvalCardTitle: { fontWeight: 600, fontSize: 13, color: "#0f1e3d", lineHeight: 1.4, marginBottom: 8 },
-  approvalCardMeta: { display: "flex", alignItems: "center", gap: 8 },
-  approvalCardTime: { fontSize: 11, color: "#94a3b8", marginLeft: "auto", fontFamily: "'IBM Plex Mono', monospace" },
-
-  typePill: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 4, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: ".3px" },
-  impactPill: { display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 700, padding: "3px 7px", borderRadius: 4, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: ".3px" },
-  envTag: { display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 600, padding: "2px 6px", borderRadius: 3, fontFamily: "'IBM Plex Mono', monospace" },
-  systemTag: { fontSize: 11, padding: "3px 8px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 4, color: "#475569", fontFamily: "'IBM Plex Mono', monospace" },
-
-  // Detail panel
-  detailPanel: { overflowY: "auto", background: "#f8f7f4" },
-  detail: { padding: "28px 32px" },
-  detailHeader: { background: "#fff", borderRadius: 12, padding: "20px 24px", border: "1px solid #e8edf5", marginBottom: 16 },
-  detailHeaderTop: { display: "flex", gap: 8, marginBottom: 12 },
-  detailTitle: { fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#0f1e3d", marginBottom: 8 },
-  detailDesc: { fontSize: 14, color: "#475569", lineHeight: 1.6, marginBottom: 16 },
-  metaRow: { display: "flex", flexWrap: "wrap", gap: 8 },
-  metaChip: { display: "flex", flexDirection: "column", background: "#f8f7f4", borderRadius: 6, padding: "6px 10px", border: "1px solid #e8edf5" },
-  metaChipLabel: { fontSize: 10, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px" },
-  metaChipValue: { fontSize: 12, fontWeight: 600, color: "#0f1e3d", fontFamily: "'IBM Plex Mono', monospace", marginTop: 2 },
-
-  section: { background: "#fff", borderRadius: 12, padding: "18px 20px", border: "1px solid #e8edf5", marginBottom: 12 },
-  sectionLabel: { fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".8px", marginBottom: 12, fontFamily: "'IBM Plex Mono', monospace" },
-
-  // Diff table
-  diffTable: { borderRadius: 8, overflow: "hidden", border: "1px solid #e8edf5", fontSize: 12, fontFamily: "'IBM Plex Mono', monospace" },
-  diffHeader: { display: "grid", gridTemplateColumns: "2fr 1fr 2fr 2fr", padding: "8px 12px", background: "#f8fafc", borderBottom: "1px solid #e8edf5", fontWeight: 700, fontSize: 10, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".5px" },
-  diffRow: { display: "grid", gridTemplateColumns: "2fr 1fr 2fr 2fr", padding: "9px 12px", borderBottom: "1px solid #f1f5f9", alignItems: "center", gap: 4 },
-  diffRowUpdate:   { background: "#fffff8" },
-  diffRowAdd:      { background: "#f0fff4" },
-  diffRowRemove:   { background: "#fff5f5" },
-  diffRowGenerate: { background: "#f5f3ff" },
-  diffKey: { fontWeight: 600, color: "#0f1e3d", fontSize: 11 },
-  diffVal: { color: "#475569", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 },
-  actionBadge: { fontSize: 9, fontWeight: 700, padding: "2px 5px", borderRadius: 3, letterSpacing: ".3px", textTransform: "uppercase", whiteSpace: "nowrap" },
-  revealBtn: { fontSize: 10, fontFamily: "'DM Sans', sans-serif", color: "#3b82f6", background: "none", border: "none", cursor: "pointer", padding: "1px 4px", textDecoration: "underline", flexShrink: 0, fontWeight: 500 },
-
-  rotationCard: { background: "#f8f7f4", borderRadius: 8, padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 },
-  rotationRow: { display: "flex", justifyContent: "space-between", fontSize: 13, color: "#64748b" },
-
-  trustNotice: { display: "flex", gap: 12, alignItems: "flex-start", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "14px 16px", marginBottom: 16 },
-
-  actionRow: { display: "flex", gap: 10, alignItems: "center", paddingTop: 8 },
-  btnApprove: { background: "#0f1e3d", color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", marginLeft: "auto" },
-  btnReject: { background: "#fff", color: "#f43f5e", border: "1px solid #fecdd3", borderRadius: 8, padding: "10px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
-  btnRule: { background: "#fff", color: "#3b82f6", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 14px", fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
-  btnGhost: { background: "#f8f7f4", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
-
-  // Rules view
-  rulesExplainer: { display: "flex", gap: 14, alignItems: "flex-start", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "16px 20px", fontSize: 13, color: "#92400e", lineHeight: 1.6 },
-  ruleCard: { display: "flex", alignItems: "center", gap: 16, background: "#fff", borderRadius: 12, padding: "18px 20px", border: "1px solid #e8edf5", transition: "opacity .2s" },
-  ruleCardLeft: { flex: 1 },
-  ruleCardTitle: { fontWeight: 700, fontSize: 14, color: "#0f1e3d" },
-  ruleCardDesc: { fontSize: 13, color: "#64748b", marginTop: 4, lineHeight: 1.5 },
-  ruleCardMeta: { display: "flex", gap: 8, marginTop: 8 },
-  ruleCardRight: { display: "flex", alignItems: "center", gap: 12 },
-  ruleMetaChip: { fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", color: "#94a3b8", background: "#f8f7f4", padding: "2px 8px", borderRadius: 4, border: "1px solid #e2e8f0" },
-  toggle: { width: 38, height: 22, borderRadius: 11, cursor: "pointer", position: "relative", transition: "background .2s", flexShrink: 0, border: "none" },
-  toggleThumb: { position: "absolute", top: 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.2)", transition: "transform .2s" },
-  deleteBtn: { background: "none", border: "none", color: "#cbd5e1", cursor: "pointer", fontSize: 14, padding: "4px 6px", borderRadius: 4 },
-
-  // Activity
-  filterRow: { display: "flex", gap: 6, marginBottom: 24, flexWrap: "wrap" },
-  filterBtn: { padding: "5px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", color: "#64748b", fontWeight: 500 },
-  filterBtnActive: { background: "#0f1e3d", color: "#fff", border: "1px solid #0f1e3d" },
-  activityList: { display: "flex", flexDirection: "column" },
-  activityItem: { display: "flex", gap: 16, position: "relative" },
-  activityIconWrap: { display: "flex", flexDirection: "column", alignItems: "center", width: 32, flexShrink: 0 },
-  activityLine: { width: 1, flex: 1, background: "#e8edf5", minHeight: 20, marginTop: 4 },
-  activityContent: { paddingBottom: 20, flex: 1 },
-  activityMsg: { fontSize: 13, color: "#0f1e3d", fontWeight: 500, lineHeight: 1.5 },
-  activityMeta: { display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" },
-  activityType: { fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 3, fontFamily: "'IBM Plex Mono', monospace", textTransform: "uppercase", letterSpacing: ".3px" },
-  activityTime: { fontSize: 11, color: "#94a3b8", fontFamily: "'IBM Plex Mono', monospace" },
-  activityActor: { fontSize: 11, color: "#94a3b8" },
-
-  // Vault
-  vaultTable: { background: "#fff", borderRadius: 12, border: "1px solid #e8edf5", overflow: "hidden", marginBottom: 16 },
-  vaultHeader: { display: "grid", gridTemplateColumns: "2fr 1.5fr 3fr 1fr 1.5fr", padding: "10px 16px", background: "#f8fafc", borderBottom: "1px solid #e8edf5", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: ".5px", fontFamily: "'IBM Plex Mono', monospace" },
-  vaultRow: { display: "grid", gridTemplateColumns: "2fr 1.5fr 3fr 1fr 1.5fr", padding: "12px 16px", borderBottom: "1px solid #f1f5f9", alignItems: "center", fontSize: 12 },
-  vaultKey: { fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: "#0f1e3d", fontSize: 12 },
-  vaultType: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#94a3b8" },
-  vaultVal: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#475569", display: "flex", alignItems: "center", gap: 6 },
-  vaultDate: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#94a3b8" },
-  healthBadge: { fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 4, fontFamily: "'IBM Plex Mono', monospace" },
-  vaultNotice: { fontSize: 13, color: "#64748b", padding: "12px 16px", background: "#f8f7f4", borderRadius: 8, border: "1px solid #e2e8f0" },
-
-  // Modal
-  overlay: { position: "fixed", inset: 0, background: "rgba(15,30,61,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, backdropFilter: "blur(4px)" },
-  modal: { background: "#fff", borderRadius: 16, padding: "28px", width: "100%", maxWidth: 480, boxShadow: "0 24px 60px rgba(0,0,0,.18)", border: "1px solid #e8edf5" },
-  modalIcon: { fontSize: 28, marginBottom: 10 },
-  modalTitle: { fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#0f1e3d", marginBottom: 6 },
-  modalSub: { fontSize: 13, color: "#64748b", lineHeight: 1.6, marginBottom: 4 },
-  impactRow: { display: "flex", alignItems: "center", gap: 12, marginTop: 12, padding: "10px 14px", background: "#f8f7f4", borderRadius: 8 },
-  modalActions: { display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 },
-  modalHint: { fontSize: 11, color: "#94a3b8", textAlign: "center", marginTop: 14, lineHeight: 1.5 },
-  formLabel: { fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: ".8px", display: "block", marginBottom: 6 },
-  formInput: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#0f1e3d", outline: "none", boxSizing: "border-box" },
-  textarea: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #e2e8f0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#0f1e3d", outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.6 },
-
-  rulePreview: { background: "#f8f7f4", borderRadius: 10, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 },
-  rulePreviewRow: { display: "flex", justifyContent: "space-between", fontSize: 13, color: "#64748b" },
-
-  // Toast
-  toast: { position: "fixed", bottom: 24, right: 24, background: "#0f1e3d", color: "#fff", padding: "12px 18px", borderRadius: 10, fontSize: 13, fontWeight: 500, zIndex: 200, boxShadow: "0 8px 24px rgba(0,0,0,.2)", display: "flex", alignItems: "center", gap: 8, animation: "fadeIn .2s ease" },
-  toastWarn: { background: "#78350f" },
-
-  emptyState: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: "#94a3b8", fontSize: 13, textAlign: "center", padding: 40 },
-};
-
-const CSS = `
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f8f7f4; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-  .approvalCard:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .statCard:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
-  input:focus, textarea:focus { border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
-`;

@@ -1,4 +1,5 @@
 # EnVault — Autonomous Agentic Build Plan
+
 ### Squadbox Swarm Execution with Governed, Recursive, Self-Correcting Architecture
 
 **Version:** 2.0 | **Date:** May 2026  
@@ -86,7 +87,7 @@ PHASE CYCLE (repeats for each of 7 phases):
       │
       │                                                    APPROVED? YES
       │                                                           │
-      └────────────────────────────────────────────────► Human Gate
+      └───────────────────────────────────────────────►  ***[ Human Gate ]***
                                                                  │
                                                           Human uses product
                                                           and confirms PASS
@@ -100,14 +101,14 @@ PHASE CYCLE (repeats for each of 7 phases):
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                         ORCHESTRATOR AGENT (OA)                             ║
+║                         ORCHESTRATOR AGENT (OA)                              ║
 ║  Task DAG manager · Agent pool scheduler · Gate enforcer · Escalation router ║
 ╚═══════════════════════════════════╤══════════════════════════════════════════╝
                                     │
               ┌─────────────────────┼─────────────────────┐
               │                     │                     │
               ▼                     ▼                     ▼
-  ┌───────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+  ┌───────────────────┐  ┌────────────────────-─┐  ┌─────────────────────┐
   │   LANE A          │  │   LANE B             │  │   LANE C            │
   │   Backend         │  │   Frontend           │  │   Infrastructure    │
   │                   │  │                      │  │                     │
@@ -123,7 +124,7 @@ PHASE CYCLE (repeats for each of 7 phases):
               ┌─────────────────────┼─────────────────────┐
               │                     │                     │
               ▼                     ▼                     ▼
-  ┌───────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+  ┌───────────────────┐  ┌──────────────────-───┐  ┌─────────────────────┐
   │   LANE D          │  │   LANE E             │  │   LANE F            │
   │   Security        │  │   Integration        │  │   Intelligence      │
   │                   │  │                      │  │                     │
@@ -137,11 +138,11 @@ PHASE CYCLE (repeats for each of 7 phases):
                                     │ all artifacts flow here
                                     ▼
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    RECURSIVE VALIDATOR SYSTEM (RVS)                         ║
-║                                                                             ║
-║   L1: Static Analysis    L2: Unit Tests      L3: Component Tests           ║
-║   L4: Service Tests      L5: Integration     L6: End-to-End                ║
-║   L7: Adversarial        L8: Performance     L9: Compliance Scan           ║
+║                    RECURSIVE VALIDATOR SYSTEM (RVS)                          ║
+║                                                                              ║
+║   L1: Static Analysis    L2: Unit Tests      L3: Component Tests             ║
+║   L4: Service Tests      L5: Integration     L6: End-to-End                  ║
+║   L7: Adversarial        L8: Performance     L9: Compliance Scan             ║
 ╚═══════════════════════════════════╤══════════════════════════════════════════╝
                                     │
                     ┌───────────────┴───────────────┐
@@ -158,22 +159,22 @@ PHASE CYCLE (repeats for each of 7 phases):
 ║                           ║        ║                              ║
 ║  All 3 must APPROVE       ║        ║  Max 2 self-revision cycles  ║
 ╚═══════════════╤═══════════╝        ║  Then: Fixer Agent assigned  ║
-                │                   ║  Max 2 fixer cycles          ║
-             APPROVED               ║  Then: Human escalation      ║
-                │                   ╚══════════════════════════════╝
+                │                    ║  Max 2 fixer cycles          ║
+             APPROVED                ║  Then: Human escalation      ║
+                │                    ╚══════════════════════════════╝
                 ▼
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                        MERGE AGENT (MA)                                     ║
-║  Integrates all lane outputs · Runs smoke tests · Tags release candidate    ║
-║  Generates phase report · Prepares human demo environment                   ║
+║                        MERGE AGENT (MA)                                      ║
+║  Integrates all lane outputs · Runs smoke tests · Tags release candidate     ║
+║  Generates phase report · Prepares human demo environment                    ║
 ╚═══════════════════════════════════╤══════════════════════════════════════════╝
                                     │
                                     ▼
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                     HUMAN CONFIRMATION GATE                                 ║
-║  Human is given access to the live product for this phase.                  ║
-║  No briefing document — the product itself is the evidence.                 ║
-║  Human enters: CONFIRM PASS · CONFIRM FAIL + notes · REQUEST CHANGE        ║
+║                     HUMAN CONFIRMATION GATE                                  ║
+║  Human is given access to the live product for this phase.                   ║
+║  No briefing document — the product itself is the evidence.                  ║
+║  Human enters: CONFIRM PASS · CONFIRM FAIL + notes · REQUEST CHANGE          ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
@@ -226,40 +227,44 @@ type ArtifactType =
 
 ### 3.2 Builder Agent Specialisations
 
-| Agent ID | Name | Specialisation | Languages/Tools |
-|---|---|---|---|
-| `arch-agent` | Architecture Agent | System design, schema, OpenAPI contracts, ADRs | YAML, JSON Schema, OpenAPI 3.1 |
-| `db-agent` | Database Agent | Schema design, migrations, indexes, query optimisation | PostgreSQL, Drizzle ORM, migration scripts |
-| `crypto-agent` | Cryptography Agent | Encryption, key derivation, HMAC, zero-knowledge primitives | Web Crypto API, libsodium, Node crypto |
-| `auth-agent` | Authentication Agent | Auth flows, RBAC, JWT, SAML, OAuth, session management | NextAuth, Passport, JOSE |
-| `backend-agent` | Backend Agent | API handlers, business logic, service layer | TypeScript, Node.js, Fastify |
-| `api-agent` | API Agent | REST endpoints, validation, rate limiting, versioning | Zod, OpenAPI, rate-limiter-flexible |
-| `ui-agent` | UI Agent | Pages, layouts, navigation, data display | React, Next.js, Tailwind |
-| `component-agent` | Component Agent | Reusable UI components, design system | React, Storybook, Tailwind |
-| `state-agent` | State Agent | Client state, caching, optimistic updates | Zustand, React Query, SWR |
-| `infra-agent` | Infrastructure Agent | Cloud resources, networking, storage, HSM | Terraform, AWS CDK, Docker |
-| `devops-agent` | DevOps Agent | CI/CD pipelines, deployment, rollback, blue-green | GitHub Actions, Docker, Helm |
-| `monitoring-agent` | Monitoring Agent | Observability, alerting, dashboards, SLOs | Datadog, OpenTelemetry, PagerDuty |
-| `security-agent` | Security Agent | Threat modelling, penetration patterns, hardening | OWASP, Semgrep, Snyk, custom rules |
-| `compliance-agent` | Compliance Agent | SOC2, GDPR, HIPAA controls, audit evidence | Policy documents, control mappings |
-| `provider-agent` | Provider Agent | Third-party API integrations, OAuth flows, webhooks | REST, OAuth 2.0, provider SDKs |
-| `ide-agent` | IDE Agent | VS Code / JetBrains extensions, LSP | TypeScript, Extension API, LSP protocol |
-| `sdk-agent` | SDK Agent | Client SDKs, CLI, language clients | TypeScript, Python, Go |
-| `ml-agent` | ML Agent | Pattern classifiers, anomaly detection, scoring models | Python, scikit-learn, regex engines |
-| `docs-agent` | Documentation Agent | API docs, changelogs, onboarding guides | Markdown, TypeDoc, Swagger UI |
+
+| Agent ID           | Name                 | Specialisation                                              | Languages/Tools                            |
+| ------------------ | -------------------- | ----------------------------------------------------------- | ------------------------------------------ |
+| `arch-agent`       | Architecture Agent   | System design, schema, OpenAPI contracts, ADRs              | YAML, JSON Schema, OpenAPI 3.1             |
+| `db-agent`         | Database Agent       | Schema design, migrations, indexes, query optimisation      | PostgreSQL, Drizzle ORM, migration scripts |
+| `crypto-agent`     | Cryptography Agent   | Encryption, key derivation, HMAC, zero-knowledge primitives | Web Crypto API, libsodium, Node crypto     |
+| `auth-agent`       | Authentication Agent | Auth flows, RBAC, JWT, SAML, OAuth, session management      | NextAuth, Passport, JOSE                   |
+| `backend-agent`    | Backend Agent        | API handlers, business logic, service layer                 | TypeScript, Node.js, Fastify               |
+| `api-agent`        | API Agent            | REST endpoints, validation, rate limiting, versioning       | Zod, OpenAPI, rate-limiter-flexible        |
+| `ui-agent`         | UI Agent             | Pages, layouts, navigation, data display                    | React, Next.js, Tailwind                   |
+| `component-agent`  | Component Agent      | Reusable UI components, design system                       | React, Storybook, Tailwind                 |
+| `state-agent`      | State Agent          | Client state, caching, optimistic updates                   | Zustand, React Query, SWR                  |
+| `infra-agent`      | Infrastructure Agent | Cloud resources, networking, storage, HSM                   | Terraform, AWS CDK, Docker                 |
+| `devops-agent`     | DevOps Agent         | CI/CD pipelines, deployment, rollback, blue-green           | GitHub Actions, Docker, Helm               |
+| `monitoring-agent` | Monitoring Agent     | Observability, alerting, dashboards, SLOs                   | Datadog, OpenTelemetry, PagerDuty          |
+| `security-agent`   | Security Agent       | Threat modelling, penetration patterns, hardening           | OWASP, Semgrep, Snyk, custom rules         |
+| `compliance-agent` | Compliance Agent     | SOC2, GDPR, HIPAA controls, audit evidence                  | Policy documents, control mappings         |
+| `provider-agent`   | Provider Agent       | Third-party API integrations, OAuth flows, webhooks         | REST, OAuth 2.0, provider SDKs             |
+| `ide-agent`        | IDE Agent            | VS Code / JetBrains extensions, LSP                         | TypeScript, Extension API, LSP protocol    |
+| `sdk-agent`        | SDK Agent            | Client SDKs, CLI, language clients                          | TypeScript, Python, Go                     |
+| `ml-agent`         | ML Agent             | Pattern classifiers, anomaly detection, scoring models      | Python, scikit-learn, regex engines        |
+| `docs-agent`       | Documentation Agent  | API docs, changelogs, onboarding guides                     | Markdown, TypeDoc, Swagger UI              |
+
 
 ### 3.3 System Agent Specialisations
 
-| Agent ID | Name | Role |
-|---|---|---|
-| `orchestrator` | Orchestrator | DAG management, scheduling, gate enforcement, escalation |
-| `validator` | Recursive Validator | Executes all 9 validation levels; emits structured findings |
-| `fixer-agent` | Fixer Agent | Receives validation failures; patches artifacts; re-triggers validator |
-| `merge-agent` | Merge Agent | Integrates lane outputs; runs smoke tests; prepares release candidate |
-| `advisor-security` | Security Advisor | Governance council member; security posture review |
-| `advisor-quality` | Quality Advisor | Governance council member; code quality and architecture review |
-| `advisor-integrity` | Integrity Advisor | Governance council member; system integrity and correctness review |
-| `reporter-agent` | Reporter Agent | Generates human-readable phase reports; tracks PRD coverage |
+
+| Agent ID            | Name                | Role                                                                   |
+| ------------------- | ------------------- | ---------------------------------------------------------------------- |
+| `orchestrator`      | Orchestrator        | DAG management, scheduling, gate enforcement, escalation               |
+| `validator`         | Recursive Validator | Executes all 9 validation levels; emits structured findings            |
+| `fixer-agent`       | Fixer Agent         | Receives validation failures; patches artifacts; re-triggers validator |
+| `merge-agent`       | Merge Agent         | Integrates lane outputs; runs smoke tests; prepares release candidate  |
+| `advisor-security`  | Security Advisor    | Governance council member; security posture review                     |
+| `advisor-quality`   | Quality Advisor     | Governance council member; code quality and architecture review        |
+| `advisor-integrity` | Integrity Advisor   | Governance council member; system integrity and correctness review     |
+| `reporter-agent`    | Reporter Agent      | Generates human-readable phase reports; tracks PRD coverage            |
+
 
 ---
 
@@ -490,17 +495,19 @@ L1: Static Analysis
 
 ### Layer Definitions & Pass Criteria
 
-| Level | Scope | Tools | Pass Criteria | Who Runs It |
-|---|---|---|---|---|
-| L1 Static | All files | tsc, ESLint, Semgrep, Gitleaks, Snyk | Zero errors, zero hardcoded secrets, zero CVE HIGH+ | Validator Agent |
-| L2 Unit | Functions & modules | Vitest | ≥ 80% line coverage; ≥ 90% on security modules; all tests pass | Validator Agent |
-| L3 Component | Service handlers, UI components | Vitest + RTL, supertest | All component tests pass; UI renders without errors; a11y scan clean | Validator Agent |
-| L4 Service | Single service with real DB | Vitest, Testcontainers | All service tests pass; migrations run clean; no data corruption | Validator Agent |
-| L5 Integration | Multi-service, API contract | Vitest, Prism, Pact | OpenAPI contract tests pass; provider mocks aligned; all boundary tests pass | Validator Agent |
-| L6 End-to-End | Full application | Playwright | All defined user journeys complete without error; screenshots captured | Validator Agent |
-| L7 Adversarial | Security surface | OWASP ZAP, custom pentest scripts | No critical/high findings; all auth checks enforced | Security Advisor |
-| L8 Performance | Load-bearing paths | k6, Grafana | p99 < targets; no memory leaks over 10-min soak; error rate < 0.1% | Validator Agent |
-| L9 Compliance | Entire phase output | Custom control mapper | All in-scope controls have passing evidence | Compliance Agent |
+
+| Level          | Scope                           | Tools                                | Pass Criteria                                                                | Who Runs It      |
+| -------------- | ------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------- | ---------------- |
+| L1 Static      | All files                       | tsc, ESLint, Semgrep, Gitleaks, Snyk | Zero errors, zero hardcoded secrets, zero CVE HIGH+                          | Validator Agent  |
+| L2 Unit        | Functions & modules             | Vitest                               | ≥ 80% line coverage; ≥ 90% on security modules; all tests pass               | Validator Agent  |
+| L3 Component   | Service handlers, UI components | Vitest + RTL, supertest              | All component tests pass; UI renders without errors; a11y scan clean         | Validator Agent  |
+| L4 Service     | Single service with real DB     | Vitest, Testcontainers               | All service tests pass; migrations run clean; no data corruption             | Validator Agent  |
+| L5 Integration | Multi-service, API contract     | Vitest, Prism, Pact                  | OpenAPI contract tests pass; provider mocks aligned; all boundary tests pass | Validator Agent  |
+| L6 End-to-End  | Full application                | Playwright                           | All defined user journeys complete without error; screenshots captured       | Validator Agent  |
+| L7 Adversarial | Security surface                | OWASP ZAP, custom pentest scripts    | No critical/high findings; all auth checks enforced                          | Security Advisor |
+| L8 Performance | Load-bearing paths              | k6, Grafana                          | p99 < targets; no memory leaks over 10-min soak; error rate < 0.1%           | Validator Agent  |
+| L9 Compliance  | Entire phase output             | Custom control mapper                | All in-scope controls have passing evidence                                  | Compliance Agent |
+
 
 ---
 
@@ -538,15 +545,17 @@ Human interaction is **restricted to one event per phase**: a confirmation that 
 
 ### 7.2 Human Gate Tasks Per Phase
 
-| Phase | Human Tasks at Gate |
-|---|---|
-| **Phase 0** | Log in. Create a project. See the empty vault. Confirm the UI loads and feels right. |
-| **Phase 1** | Add 5 secrets across 3 environments. Reveal a value. Copy it. Export as .env. Delete one. Confirm all work. |
+
+| Phase       | Human Tasks at Gate                                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 0** | Log in. Create a project. See the empty vault. Confirm the UI loads and feels right.                                                                             |
+| **Phase 1** | Add 5 secrets across 3 environments. Reveal a value. Copy it. Export as .env. Delete one. Confirm all work.                                                      |
 | **Phase 2** | Add a duplicate key. Confirm the conflict alert fires. Add a key to prod but not dev. Confirm missing-key warning. View the health score. Confirm the diff view. |
-| **Phase 3** | Generate a JWT secret using Secret Forge. Set a 30-day rotation policy. Trigger a manual rotation. Confirm the new value is active. |
-| **Phase 4** | Simulate a breach (test mode). Confirm the alert fires within 60 seconds. Confirm the mitigation workflow presents correctly. |
-| **Phase 5** | Connect to Vercel. Push secrets. Confirm they appear in Vercel dashboard. Install VS Code extension. Confirm secrets inject into terminal. |
-| **Phase 6** | Invite a Viewer. Confirm they cannot reveal secrets. Request JIT access. Approve it. Confirm access expiry. Download a SOC2 evidence report. |
+| **Phase 3** | Generate a JWT secret using Secret Forge. Set a 30-day rotation policy. Trigger a manual rotation. Confirm the new value is active.                              |
+| **Phase 4** | Simulate a breach (test mode). Confirm the alert fires within 60 seconds. Confirm the mitigation workflow presents correctly.                                    |
+| **Phase 5** | Connect to Vercel. Push secrets. Confirm they appear in Vercel dashboard. Install VS Code extension. Confirm secrets inject into terminal.                       |
+| **Phase 6** | Invite a Viewer. Confirm they cannot reveal secrets. Request JIT access. Approve it. Confirm access expiry. Download a SOC2 evidence report.                     |
+
 
 ### 7.3 Handling Human Failure Reports
 
@@ -579,33 +588,37 @@ Human input → Reporter Agent formats as structured finding
 ## 8. Phase 0 — Foundation Bootstrap
 
 ### Goal
+
 Establish the complete technical foundation: monorepo, toolchain, database schema, API contracts, authentication skeleton, infrastructure, and CI/CD pipeline. No user-visible features. All downstream agents depend on Phase 0 outputs.
 
 ### Entry Criteria
+
 - PRD v1.0 locked
 - Tech stack decisions finalised (see below)
 - Repository created with branch protection enabled
 
 ### Tech Stack Decisions (fixed at Phase 0)
 
-| Layer | Choice | Rationale |
-|---|---|---|
-| Runtime | Node.js 22 LTS + TypeScript 5.5 strict | Ecosystem depth, type safety |
-| Framework | Next.js 15 (App Router) | Full-stack, SSR, edge-ready |
-| Database | PostgreSQL 16 (Supabase or RDS) | ACID, JSON support, row-level security |
-| ORM | Drizzle ORM | Type-safe, migration-native, no magic |
-| Auth | NextAuth v5 + custom JWT | Flexible, supports SAML extension |
-| Validation | Zod | Runtime + compile-time safety |
-| API | REST + tRPC (internal) | REST for external; tRPC for type-safe internal |
-| Crypto | Web Crypto API + libsodium-wrappers | Audited primitives, WASM-portable |
-| UI | React 19 + Tailwind CSS 4 | Component model, utility-first |
-| State | Zustand (client) + React Query (server) | Minimal, predictable |
-| Testing | Vitest + Playwright + Testing Library | Fast, unified runner |
-| Infrastructure | AWS (ECS Fargate + RDS + CloudHSM + S3) | Production-grade, HSM available |
-| IaC | Terraform | Reproducible, auditable |
-| CI/CD | GitHub Actions | Native to repo, wide action ecosystem |
-| Monitoring | OpenTelemetry → Datadog | Vendor-neutral instrumentation |
-| Secrets (meta) | AWS Secrets Manager | EnVault's own config — not circular |
+
+| Layer          | Choice                                  | Rationale                                      |
+| -------------- | --------------------------------------- | ---------------------------------------------- |
+| Runtime        | Node.js 22 LTS + TypeScript 5.5 strict  | Ecosystem depth, type safety                   |
+| Framework      | Next.js 15 (App Router)                 | Full-stack, SSR, edge-ready                    |
+| Database       | PostgreSQL 16 (Supabase or RDS)         | ACID, JSON support, row-level security         |
+| ORM            | Drizzle ORM                             | Type-safe, migration-native, no magic          |
+| Auth           | NextAuth v5 + custom JWT                | Flexible, supports SAML extension              |
+| Validation     | Zod                                     | Runtime + compile-time safety                  |
+| API            | REST + tRPC (internal)                  | REST for external; tRPC for type-safe internal |
+| Crypto         | Web Crypto API + libsodium-wrappers     | Audited primitives, WASM-portable              |
+| UI             | React 19 + Tailwind CSS 4               | Component model, utility-first                 |
+| State          | Zustand (client) + React Query (server) | Minimal, predictable                           |
+| Testing        | Vitest + Playwright + Testing Library   | Fast, unified runner                           |
+| Infrastructure | AWS (ECS Fargate + RDS + CloudHSM + S3) | Production-grade, HSM available                |
+| IaC            | Terraform                               | Reproducible, auditable                        |
+| CI/CD          | GitHub Actions                          | Native to repo, wide action ecosystem          |
+| Monitoring     | OpenTelemetry → Datadog                 | Vendor-neutral instrumentation                 |
+| Secrets (meta) | AWS Secrets Manager                     | EnVault's own config — not circular            |
+
 
 ---
 
@@ -646,18 +659,20 @@ P0-DB-002              P0-API-002           P0-INF-002                │
 
 ### Phase 0 Task Definitions
 
-| Task ID | Name | Agent | Depends On | Output Artifacts | Acceptance Criteria |
-|---|---|---|---|---|---|
-| **P0-ARCH-001** | System Architecture & ADRs | `arch-agent` | None | `docs/adr/*.md`, `docs/architecture.md`, system diagram | All key decisions documented; tech stack locked; no ambiguity in service boundaries |
-| **P0-DB-001** | Database Schema v1 | `db-agent` | P0-ARCH-001 | `db/schema.ts`, entity-relationship diagram | Schema covers: users, organisations, projects, environments, secrets (encrypted), audit_events, versions; all foreign keys correct; RLS policies defined |
-| **P0-DB-002** | Migration Runner & Seed | `db-agent` | P0-DB-001 | `db/migrations/`, `db/seed.ts` | `drizzle-kit push` runs cleanly; `drizzle-kit generate` produces valid SQL; seed populates test data; `down` migration tested |
-| **P0-API-001** | OpenAPI Specification v1 | `arch-agent` | P0-ARCH-001 | `api/openapi.yaml` | Valid OpenAPI 3.1; all Phase 1 endpoints defined; request/response schemas complete; security schemes defined; Prism mock server starts successfully |
-| **P0-API-002** | API Types Codegen | `api-agent` | P0-API-001 | `packages/api-types/`, `packages/api-client/` | Generated TypeScript types match spec; no manual type definitions for API shapes; client package builds and exports correctly |
-| **P0-INF-001** | Core AWS Infrastructure | `infra-agent` | P0-ARCH-001 | `infra/terraform/`, `infra/docker/` | `terraform plan` shows no errors; VPC, ECS cluster, RDS, S3, CloudHSM, IAM roles provisioned; `docker build` succeeds for all services |
-| **P0-INF-002** | CI/CD Pipeline | `devops-agent` | P0-INF-001, P0-MONO-001 | `.github/workflows/*.yml` | Pipeline runs on push; stages: lint → test → build → security scan → deploy to staging; all stages complete in < 10 min; deployment to staging succeeds |
-| **P0-AUTH-001** | Authentication Skeleton | `auth-agent` | P0-DB-001, P0-API-001 | `lib/auth/`, `app/api/auth/` | NextAuth configured; email/password and Google OAuth work; session tokens issued; JWT structure validated; protected routes return 401 without valid session |
-| **P0-MONO-001** | Monorepo Configuration & Toolchain | `devops-agent` | P0-ARCH-001 | `package.json`, `turbo.json`, `tsconfig.json`, `.eslintrc`, `vitest.config.ts` | `pnpm install` succeeds; `pnpm build` builds all packages in dependency order; `pnpm test` runs all test suites; `pnpm lint` runs with zero violations |
-| **P0-SEC-001** | Security Baseline | `security-agent` | P0-AUTH-001, P0-API-001 | `lib/security/`, `middleware.ts`, `docs/security-policy.md` | Security headers middleware applied (CSP, HSTS, X-Frame); rate limiting on auth endpoints (10 req/min); request ID on all responses; audit_event write function implemented; Semgrep baseline scan passes |
+
+| Task ID         | Name                               | Agent            | Depends On              | Output Artifacts                                                               | Acceptance Criteria                                                                                                                                                                                       |
+| --------------- | ---------------------------------- | ---------------- | ----------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P0-ARCH-001** | System Architecture & ADRs         | `arch-agent`     | None                    | `docs/adr/*.md`, `docs/architecture.md`, system diagram                        | All key decisions documented; tech stack locked; no ambiguity in service boundaries                                                                                                                       |
+| **P0-DB-001**   | Database Schema v1                 | `db-agent`       | P0-ARCH-001             | `db/schema.ts`, entity-relationship diagram                                    | Schema covers: users, organisations, projects, environments, secrets (encrypted), audit_events, versions; all foreign keys correct; RLS policies defined                                                  |
+| **P0-DB-002**   | Migration Runner & Seed            | `db-agent`       | P0-DB-001               | `db/migrations/`, `db/seed.ts`                                                 | `drizzle-kit push` runs cleanly; `drizzle-kit generate` produces valid SQL; seed populates test data; `down` migration tested                                                                             |
+| **P0-API-001**  | OpenAPI Specification v1           | `arch-agent`     | P0-ARCH-001             | `api/openapi.yaml`                                                             | Valid OpenAPI 3.1; all Phase 1 endpoints defined; request/response schemas complete; security schemes defined; Prism mock server starts successfully                                                      |
+| **P0-API-002**  | API Types Codegen                  | `api-agent`      | P0-API-001              | `packages/api-types/`, `packages/api-client/`                                  | Generated TypeScript types match spec; no manual type definitions for API shapes; client package builds and exports correctly                                                                             |
+| **P0-INF-001**  | Core AWS Infrastructure            | `infra-agent`    | P0-ARCH-001             | `infra/terraform/`, `infra/docker/`                                            | `terraform plan` shows no errors; VPC, ECS cluster, RDS, S3, CloudHSM, IAM roles provisioned; `docker build` succeeds for all services                                                                    |
+| **P0-INF-002**  | CI/CD Pipeline                     | `devops-agent`   | P0-INF-001, P0-MONO-001 | `.github/workflows/*.yml`                                                      | Pipeline runs on push; stages: lint → test → build → security scan → deploy to staging; all stages complete in < 10 min; deployment to staging succeeds                                                   |
+| **P0-AUTH-001** | Authentication Skeleton            | `auth-agent`     | P0-DB-001, P0-API-001   | `lib/auth/`, `app/api/auth/`                                                   | NextAuth configured; email/password and Google OAuth work; session tokens issued; JWT structure validated; protected routes return 401 without valid session                                              |
+| **P0-MONO-001** | Monorepo Configuration & Toolchain | `devops-agent`   | P0-ARCH-001             | `package.json`, `turbo.json`, `tsconfig.json`, `.eslintrc`, `vitest.config.ts` | `pnpm install` succeeds; `pnpm build` builds all packages in dependency order; `pnpm test` runs all test suites; `pnpm lint` runs with zero violations                                                    |
+| **P0-SEC-001**  | Security Baseline                  | `security-agent` | P0-AUTH-001, P0-API-001 | `lib/security/`, `middleware.ts`, `docs/security-policy.md`                    | Security headers middleware applied (CSP, HSTS, X-Frame); rate limiting on auth endpoints (10 req/min); request ID on all responses; audit_event write function implemented; Semgrep baseline scan passes |
+
 
 ### Phase 0 Parallel Execution Plan
 
@@ -697,9 +712,13 @@ Lane F (devops):                 [P0-MONO-001]───────────�
 ## 9. Phase 1 — Core Vault
 
 ### Goal
+
 Implement the encrypted secret vault: full CRUD, AES-256-GCM encryption, version history, secret types, bulk import/export, and the complete vault UI. First fully functional user-facing feature set.
 
+**Domain hierarchy (canonical):** `Project → Vault (1:1) → Environment → Variable` with **`key` + `value`** paired at the leaf (key unique per environment). Workspace/fleet views sit *above* Project. See `README.md` — *Domain hierarchy* and `docs/EnVault-PRD.md` §5.1.
+
 ### Entry Criteria
+
 All Phase 0 stability gate criteria met. Human confirmed Phase 0 gate.
 
 ### Phase 1 Task DAG
@@ -749,17 +768,19 @@ P1-BE-003                            │
 
 ### Phase 1 Task Definitions
 
-| Task ID | Name | Agent | Depends On | Output Artifacts | Acceptance Criteria |
-|---|---|---|---|---|---|
-| **P1-CRYPTO-001** | Encryption Library | `crypto-agent` | P0-SEC-001 | `lib/crypto/encrypt.ts`, `lib/crypto/decrypt.ts`, `lib/crypto/derive-key.ts`, `lib/crypto/__tests__/` | AES-256-GCM encrypt/decrypt round-trip correct; PBKDF2 with 600,000 iterations; IV unique per encryption; ciphertext + IV stored as base64; 100% test coverage on crypto module; known-answer tests pass; no plaintext ever logged |
-| **P1-BE-001** | Secret Service | `backend-agent` | P1-CRYPTO-001, P0-DB-001 | `services/secret/`, `repositories/secret.ts` | Create/read/update/delete operations correct; all values encrypted before DB write; all values decrypted after DB read only when authorised; RBAC enforced at service layer; secret type validation applied; audit event emitted on every write |
-| **P1-BE-002** | Version History Service | `backend-agent` | P1-BE-001 | `services/version/`, `repositories/version.ts` | Every secret update stores previous version; last 20 versions retained; restore from version works correctly; version timestamps accurate; cascade delete handled |
-| **P1-BE-003** | Bulk Import/Export Service | `backend-agent` | P1-BE-001 | `services/import/`, `services/export/` | .env file parsed correctly (comments, quoted values, multiline); duplicate detection on import with conflict report; export in .env / JSON / YAML / shell formats; export never touches server logs; import validated against Zod schema before write |
-| **P1-API-001** | Vault REST Endpoints | `api-agent` | P1-BE-001, P1-BE-002, P1-BE-003, P0-API-001 | `app/api/secrets/`, `app/api/export/`, `app/api/import/` | All endpoints match OpenAPI spec; contract tests pass; authentication required on all routes; authorisation tested for each role; rate limiting applied to write routes; paginated list endpoint; input sanitisation on all fields |
-| **P1-UI-001** | Vault Table UI | `ui-agent` | P1-API-001 | `app/(vault)/`, `components/vault/VaultTable.tsx`, `components/vault/SearchBar.tsx` | Secrets listed with key name, type badge, masked value, last-updated; search filters in real-time; reveal button shows value (role-permissioned); copy-to-clipboard works; empty state shown; loading skeleton shown; keyboard-accessible |
-| **P1-UI-002** | Secret Modal (Add/Edit/Delete) | `component-agent` | P1-API-001 | `components/vault/SecretModal.tsx`, `components/vault/TypePicker.tsx` | Add form: key name (UPPER_SNAKE forced), type picker, value field, description, isSecret toggle; edit pre-fills; delete requires confirmation; validation errors shown inline; form submits optimistically; API errors surfaced gracefully |
-| **P1-UI-003** | Import/Export UI | `ui-agent` | P1-BE-003 | `components/vault/ImportModal.tsx`, `components/vault/ExportModal.tsx` | Drag-and-drop .env upload; paste area; conflict preview before commit; format selector for export; download triggered correctly; no value in URL or console log |
-| **P1-E2E-001** | Vault E2E Test Suite | `validator` | P1-UI-003 | `e2e/vault.spec.ts` | Full journey: login → create project → add 5 secrets → reveal one → copy one → edit one → delete one → export → import — all assertions pass |
+
+| Task ID           | Name                           | Agent             | Depends On                                  | Output Artifacts                                                                                      | Acceptance Criteria                                                                                                                                                                                                                                   |
+| ----------------- | ------------------------------ | ----------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P1-CRYPTO-001** | Encryption Library             | `crypto-agent`    | P0-SEC-001                                  | `lib/crypto/encrypt.ts`, `lib/crypto/decrypt.ts`, `lib/crypto/derive-key.ts`, `lib/crypto/__tests__/` | AES-256-GCM encrypt/decrypt round-trip correct; PBKDF2 with 600,000 iterations; IV unique per encryption; ciphertext + IV stored as base64; 100% test coverage on crypto module; known-answer tests pass; no plaintext ever logged                    |
+| **P1-BE-001**     | Secret Service                 | `backend-agent`   | P1-CRYPTO-001, P0-DB-001                    | `services/secret/`, `repositories/secret.ts`                                                          | Create/read/update/delete operations correct; all values encrypted before DB write; all values decrypted after DB read only when authorised; RBAC enforced at service layer; secret type validation applied; audit event emitted on every write       |
+| **P1-BE-002**     | Version History Service        | `backend-agent`   | P1-BE-001                                   | `services/version/`, `repositories/version.ts`                                                        | Every secret update stores previous version; last 20 versions retained; restore from version works correctly; version timestamps accurate; cascade delete handled                                                                                     |
+| **P1-BE-003**     | Bulk Import/Export Service     | `backend-agent`   | P1-BE-001                                   | `services/import/`, `services/export/`                                                                | .env file parsed correctly (comments, quoted values, multiline); duplicate detection on import with conflict report; export in .env / JSON / YAML / shell formats; export never touches server logs; import validated against Zod schema before write |
+| **P1-API-001**    | Vault REST Endpoints           | `api-agent`       | P1-BE-001, P1-BE-002, P1-BE-003, P0-API-001 | `app/api/secrets/`, `app/api/export/`, `app/api/import/`                                              | All endpoints match OpenAPI spec; contract tests pass; authentication required on all routes; authorisation tested for each role; rate limiting applied to write routes; paginated list endpoint; input sanitisation on all fields                    |
+| **P1-UI-001**     | Vault Table UI                 | `ui-agent`        | P1-API-001                                  | `app/(vault)/`, `components/vault/VaultTable.tsx`, `components/vault/SearchBar.tsx`                   | Secrets listed with key name, type badge, masked value, last-updated; search filters in real-time; reveal button shows value (role-permissioned); copy-to-clipboard works; empty state shown; loading skeleton shown; keyboard-accessible             |
+| **P1-UI-002**     | Secret Modal (Add/Edit/Delete) | `component-agent` | P1-API-001                                  | `components/vault/SecretModal.tsx`, `components/vault/TypePicker.tsx`                                 | Add form: key name (UPPER_SNAKE forced), type picker, value field, description, isSecret toggle; edit pre-fills; delete requires confirmation; validation errors shown inline; form submits optimistically; API errors surfaced gracefully            |
+| **P1-UI-003**     | Import/Export UI               | `ui-agent`        | P1-BE-003                                   | `components/vault/ImportModal.tsx`, `components/vault/ExportModal.tsx`                                | Drag-and-drop .env upload; paste area; conflict preview before commit; format selector for export; download triggered correctly; no value in URL or console log                                                                                       |
+| **P1-E2E-001**    | Vault E2E Test Suite           | `validator`       | P1-UI-003                                   | `e2e/vault.spec.ts`                                                                                   | Full journey: login → create project → add 5 secrets → reveal one → copy one → edit one → delete one → export → import — all assertions pass                                                                                                          |
+
 
 ### Phase 1 Parallel Execution Plan
 
@@ -803,9 +824,11 @@ Add 5 secrets across 3 environments. Reveal a secret value and confirm it's corr
 ## 10. Phase 2 — Environment Intelligence
 
 ### Goal
+
 Implement the multi-environment model, cross-environment diffing, the Intelligence Engine (conflict detection, health scoring, smart grouping), and the environment management UI.
 
 ### Entry Criteria
+
 Phase 1 stability gate passed. Human confirmed Phase 1 gate.
 
 ### Phase 2 Task DAG
@@ -871,21 +894,23 @@ P2-INTEL-001               P2-INTEL-002
 
 ### Phase 2 Task Definitions
 
-| Task ID | Name | Agent | Depends On | Output Artifacts | Acceptance Criteria |
-|---|---|---|---|---|---|
-| **P2-BE-001** | Environment Service | `backend-agent` | P0-DB-001 | `services/environment/`, `repositories/environment.ts` | CRUD on environments; inheritance model (child overrides parent); locking prevents writes without elevated auth; snapshot/restore preserves all secrets at point-in-time; promotion workflow creates diff preview before write |
-| **P2-ML-001** | Secret Pattern Library | `ml-agent` | None | `lib/detection/patterns.ts`, `lib/detection/patterns.test.ts` | ≥ 400 secret format patterns; coverage: AWS, GCP, Azure, Stripe, GitHub, Twilio, SendGrid, OpenAI, JWT, private keys, connection strings; false positive rate < 2% on test corpus of 10,000 synthetic values |
-| **P2-ML-002** | Secret Type Classifier | `ml-agent` | P2-ML-001 | `lib/detection/classifier.ts` | Classify value into: `api-key | connection-string | jwt-secret | private-key | oauth-token | url | generic-string` with confidence score; ≥ 95% accuracy on labelled test set; runs synchronously in < 5ms per value |
-| **P2-INTEL-001** | Diff Engine | `backend-agent` | P2-BE-001 | `services/intelligence/diff.ts` | Produces structured diff for any two environments: missing-in-A, missing-in-B, value-drift, identical, type-mismatch; diff is deterministic; handles 1,000-key environments in < 100ms |
-| **P2-INTEL-002** | Anomaly Detectors | `ml-agent` | P2-ML-002, P2-INTEL-001 | `services/intelligence/detectors/` | Detector modules: `duplicate`, `type-mismatch`, `misclassification`, `plaintext-secret`, `naming-convention`, `missing-key`, `weak-value`; each emits structured Finding with severity, message, suggested fix; all detectors have ≥ 95% precision on test set |
-| **P2-INTEL-003** | Health Score Engine | `ml-agent` | P2-INTEL-002 | `services/intelligence/health-score.ts` | Produces 0–100 score for each environment; score is deterministic given same inputs; sub-scores for: completeness, hygiene, security posture, drift; score changes predictably when issues are resolved; test suite covers score boundary conditions |
-| **P2-INTEL-004** | Smart Grouping Engine | `ml-agent` | P2-ML-001 | `services/intelligence/grouping.ts` | Auto-groups keys by detected service (Stripe, AWS, DB, Auth, etc.); unknown keys grouped as "Other"; groups survive key rename; grouping runs in < 50ms for 500-key vault |
-| **P2-API-001** | Intelligence REST Endpoints | `api-agent` | P2-INTEL-001 through P2-INTEL-004, P0-API-001 | `app/api/intelligence/` | Endpoints: `GET /diff`, `GET /health-score`, `GET /findings`, `GET /groups`; all cached with 30s TTL (cache invalidated on write); all return structured responses matching OpenAPI spec |
-| **P2-UI-001** | Environment Tabs & Key Registry | `ui-agent` | P2-API-001 | `components/environments/EnvTabs.tsx`, `components/environments/KeyRegistry.tsx` | Tab per environment; presence matrix shows which keys exist in which env; missing keys highlighted in red; inherited values visually distinct; environment lock indicator |
-| **P2-UI-002** | Diff View | `component-agent` | P2-API-001 | `components/environments/DiffView.tsx` | Side-by-side comparison of any two environments; categories: missing, drifted, identical, type-mismatch; one-click resolution for each finding; colour-coded; keyboard-accessible |
-| **P2-UI-003** | Health Score Dashboard | `ui-agent` | P2-API-001 | `components/intelligence/HealthScore.tsx` | Gauge chart 0–100; sub-scores visible; trend over time (7-day sparkline); drill-down to specific findings; real-time refresh on secret write |
-| **P2-UI-004** | Intelligence Panel | `ui-agent` | P2-API-001 | `components/intelligence/FindingsPanel.tsx`, `components/intelligence/GroupView.tsx` | Findings listed by severity; each finding shows: key name, issue, suggested fix, one-click resolve; smart groups as collapsible sections; suggestion cards (naming, descriptions, expiry) |
-| **P2-E2E-001** | Intelligence E2E Suite | `validator` | All P2-UI | `e2e/intelligence.spec.ts` | Journey 1: add duplicate key → alert fires immediately. Journey 2: add key to prod not dev → missing-key alert. Journey 3: view diff between staging and prod → categories correct. Journey 4: health score changes when finding is resolved |
+
+| Task ID          | Name                            | Agent             | Depends On                                    | Output Artifacts                                                                     | Acceptance Criteria                                                                                                                                                                                                                                            |
+| ---------------- | ------------------------------- | ----------------- | --------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P2-BE-001**    | Environment Service             | `backend-agent`   | P0-DB-001                                     | `services/environment/`, `repositories/environment.ts`                               | CRUD on environments; inheritance model (child overrides parent); locking prevents writes without elevated auth; snapshot/restore preserves all secrets at point-in-time; promotion workflow creates diff preview before write                                 |
+| **P2-ML-001**    | Secret Pattern Library          | `ml-agent`        | None                                          | `lib/detection/patterns.ts`, `lib/detection/patterns.test.ts`                        | ≥ 400 secret format patterns; coverage: AWS, GCP, Azure, Stripe, GitHub, Twilio, SendGrid, OpenAI, JWT, private keys, connection strings; false positive rate < 2% on test corpus of 10,000 synthetic values                                                   |
+| **P2-ML-002**    | Secret Type Classifier          | `ml-agent`        | P2-ML-001                                     | `lib/detection/classifier.ts`                                                        | Classify value into: `api-key                                                                                                                                                                                                                                  |
+| **P2-INTEL-001** | Diff Engine                     | `backend-agent`   | P2-BE-001                                     | `services/intelligence/diff.ts`                                                      | Produces structured diff for any two environments: missing-in-A, missing-in-B, value-drift, identical, type-mismatch; diff is deterministic; handles 1,000-key environments in < 100ms                                                                         |
+| **P2-INTEL-002** | Anomaly Detectors               | `ml-agent`        | P2-ML-002, P2-INTEL-001                       | `services/intelligence/detectors/`                                                   | Detector modules: `duplicate`, `type-mismatch`, `misclassification`, `plaintext-secret`, `naming-convention`, `missing-key`, `weak-value`; each emits structured Finding with severity, message, suggested fix; all detectors have ≥ 95% precision on test set |
+| **P2-INTEL-003** | Health Score Engine             | `ml-agent`        | P2-INTEL-002                                  | `services/intelligence/health-score.ts`                                              | Produces 0–100 score for each environment; score is deterministic given same inputs; sub-scores for: completeness, hygiene, security posture, drift; score changes predictably when issues are resolved; test suite covers score boundary conditions           |
+| **P2-INTEL-004** | Smart Grouping Engine           | `ml-agent`        | P2-ML-001                                     | `services/intelligence/grouping.ts`                                                  | Auto-groups keys by detected service (Stripe, AWS, DB, Auth, etc.); unknown keys grouped as "Other"; groups survive key rename; grouping runs in < 50ms for 500-key vault                                                                                      |
+| **P2-API-001**   | Intelligence REST Endpoints     | `api-agent`       | P2-INTEL-001 through P2-INTEL-004, P0-API-001 | `app/api/intelligence/`                                                              | Endpoints: `GET /diff`, `GET /health-score`, `GET /findings`, `GET /groups`; all cached with 30s TTL (cache invalidated on write); all return structured responses matching OpenAPI spec                                                                       |
+| **P2-UI-001**    | Environment Tabs & Key Registry | `ui-agent`        | P2-API-001                                    | `components/environments/EnvTabs.tsx`, `components/environments/KeyRegistry.tsx`     | Tab per environment; presence matrix shows which keys exist in which env; missing keys highlighted in red; inherited values visually distinct; environment lock indicator                                                                                      |
+| **P2-UI-002**    | Diff View                       | `component-agent` | P2-API-001                                    | `components/environments/DiffView.tsx`                                               | Side-by-side comparison of any two environments; categories: missing, drifted, identical, type-mismatch; one-click resolution for each finding; colour-coded; keyboard-accessible                                                                              |
+| **P2-UI-003**    | Health Score Dashboard          | `ui-agent`        | P2-API-001                                    | `components/intelligence/HealthScore.tsx`                                            | Gauge chart 0–100; sub-scores visible; trend over time (7-day sparkline); drill-down to specific findings; real-time refresh on secret write                                                                                                                   |
+| **P2-UI-004**    | Intelligence Panel              | `ui-agent`        | P2-API-001                                    | `components/intelligence/FindingsPanel.tsx`, `components/intelligence/GroupView.tsx` | Findings listed by severity; each finding shows: key name, issue, suggested fix, one-click resolve; smart groups as collapsible sections; suggestion cards (naming, descriptions, expiry)                                                                      |
+| **P2-E2E-001**   | Intelligence E2E Suite          | `validator`       | All P2-UI                                     | `e2e/intelligence.spec.ts`                                                           | Journey 1: add duplicate key → alert fires immediately. Journey 2: add key to prod not dev → missing-key alert. Journey 3: view diff between staging and prod → categories correct. Journey 4: health score changes when finding is resolved                   |
+
 
 ### Phase 2 Stability Gate Criteria
 
@@ -910,24 +935,28 @@ Add a key that already exists — confirm the duplicate alert appears immediatel
 ## 11. Phase 3 — Key Lifecycle & Rotation
 
 ### Goal
+
 Implement the Secret Forge (key generator), rotation policies, automated rotation for supported providers, rotation scheduling, and the rotation health dashboard.
 
 ### Entry Criteria
+
 Phase 2 stability gate passed. Human confirmed Phase 2 gate.
 
 ### Phase 3 Task Definitions
 
-| Task ID | Name | Agent | Depends On | Output Artifacts | Acceptance Criteria |
-|---|---|---|---|---|---|
-| **P3-CRYPTO-001** | Secret Forge Engine | `crypto-agent` | P1-CRYPTO-001 | `lib/forge/generators.ts` | Generators for all 9 formats (hex, base64, UUID, API-key, RSA, Ed25519, ECDSA, bcrypt, passphrase); all use Web Crypto API or libsodium; entropy calculation correct; known-answer tests; generation time < 100ms for all types |
-| **P3-BE-001** | Rotation Policy Service | `backend-agent` | P0-DB-001 | `services/rotation/policy.ts`, `db/migrations/add_rotation_policy.ts` | CRUD on rotation policies per secret; schedule stored as cron expression; next_rotation_at computed correctly; overdue detection; dry-run mode returns blast radius without executing |
-| **P3-BE-002** | Rotation Execution Engine | `backend-agent` | P3-BE-001, P3-CRYPTO-001 | `services/rotation/executor.ts`, `workers/rotation-worker.ts` | Executes rotation: generate new value → encrypt → write → emit audit event → mark old for grace-period revocation; idempotent (re-run safe); partial failure rolls back; works for manual and scheduled triggers |
-| **P3-INT-001** | Provider Rotation Adapters | `provider-agent` | P3-BE-002 | `lib/providers/rotation/stripe.ts`, `github.ts`, `twilio.ts`, `aws-iam.ts`, `sendgrid.ts`, `clerk.ts` | Each adapter: authenticate, generate new key via provider API, confirm, return new value; test against provider sandboxes; timeout handling; error mapped to structured RotationError; adapter contract tests with Nock mocks |
-| **P3-BE-003** | Rotation Scheduler | `devops-agent` | P3-BE-001 | `workers/rotation-scheduler.ts`, `infra/terraform/scheduler.tf` | Runs on configurable interval (default: hourly); queries for due rotations; enqueues rotation jobs; respects business hours config; missed rotations re-enqueued with backoff; no duplicate executions (distributed lock) |
-| **P3-API-001** | Rotation REST Endpoints | `api-agent` | P3-BE-002, P3-INT-001 | `app/api/rotation/` | Endpoints: trigger rotation, set policy, get rotation history, get rotation dashboard; admin-only trigger; audit event on all rotation calls |
-| **P3-UI-001** | Secret Forge UI | `component-agent` | P3-CRYPTO-001 | `components/forge/SecretForge.tsx`, `components/forge/EntropyMeter.tsx` | Format picker with preview; entropy meter (bits + crack-time); generate button; copy without save option; save to vault option; generate a set of related secrets (e.g., full auth suite) |
-| **P3-UI-002** | Rotation Policy UI | `ui-agent` | P3-API-001 | `components/rotation/RotationPolicy.tsx`, `components/rotation/RotationDashboard.tsx` | Policy form: manual / scheduled (preset + custom cron); next rotation date displayed; rotation history timeline; overdue keys highlighted; dry-run preview modal showing blast radius |
-| **P3-E2E-001** | Key Lifecycle E2E Suite | `validator` | All P3-UI | `e2e/rotation.spec.ts` | Journey 1: generate JWT secret via Forge → save → confirm entropy shown. Journey 2: set 30-day policy → trigger manual rotation → confirm new value active → confirm audit entry. Journey 3: view rotation dashboard → overdue keys listed |
+
+| Task ID           | Name                       | Agent             | Depends On               | Output Artifacts                                                                                      | Acceptance Criteria                                                                                                                                                                                                                        |
+| ----------------- | -------------------------- | ----------------- | ------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **P3-CRYPTO-001** | Secret Forge Engine        | `crypto-agent`    | P1-CRYPTO-001            | `lib/forge/generators.ts`                                                                             | Generators for all 9 formats (hex, base64, UUID, API-key, RSA, Ed25519, ECDSA, bcrypt, passphrase); all use Web Crypto API or libsodium; entropy calculation correct; known-answer tests; generation time < 100ms for all types            |
+| **P3-BE-001**     | Rotation Policy Service    | `backend-agent`   | P0-DB-001                | `services/rotation/policy.ts`, `db/migrations/add_rotation_policy.ts`                                 | CRUD on rotation policies per secret; schedule stored as cron expression; next_rotation_at computed correctly; overdue detection; dry-run mode returns blast radius without executing                                                      |
+| **P3-BE-002**     | Rotation Execution Engine  | `backend-agent`   | P3-BE-001, P3-CRYPTO-001 | `services/rotation/executor.ts`, `workers/rotation-worker.ts`                                         | Executes rotation: generate new value → encrypt → write → emit audit event → mark old for grace-period revocation; idempotent (re-run safe); partial failure rolls back; works for manual and scheduled triggers                           |
+| **P3-INT-001**    | Provider Rotation Adapters | `provider-agent`  | P3-BE-002                | `lib/providers/rotation/stripe.ts`, `github.ts`, `twilio.ts`, `aws-iam.ts`, `sendgrid.ts`, `clerk.ts` | Each adapter: authenticate, generate new key via provider API, confirm, return new value; test against provider sandboxes; timeout handling; error mapped to structured RotationError; adapter contract tests with Nock mocks              |
+| **P3-BE-003**     | Rotation Scheduler         | `devops-agent`    | P3-BE-001                | `workers/rotation-scheduler.ts`, `infra/terraform/scheduler.tf`                                       | Runs on configurable interval (default: hourly); queries for due rotations; enqueues rotation jobs; respects business hours config; missed rotations re-enqueued with backoff; no duplicate executions (distributed lock)                  |
+| **P3-API-001**    | Rotation REST Endpoints    | `api-agent`       | P3-BE-002, P3-INT-001    | `app/api/rotation/`                                                                                   | Endpoints: trigger rotation, set policy, get rotation history, get rotation dashboard; admin-only trigger; audit event on all rotation calls                                                                                               |
+| **P3-UI-001**     | Secret Forge UI            | `component-agent` | P3-CRYPTO-001            | `components/forge/SecretForge.tsx`, `components/forge/EntropyMeter.tsx`                               | Format picker with preview; entropy meter (bits + crack-time); generate button; copy without save option; save to vault option; generate a set of related secrets (e.g., full auth suite)                                                  |
+| **P3-UI-002**     | Rotation Policy UI         | `ui-agent`        | P3-API-001               | `components/rotation/RotationPolicy.tsx`, `components/rotation/RotationDashboard.tsx`                 | Policy form: manual / scheduled (preset + custom cron); next rotation date displayed; rotation history timeline; overdue keys highlighted; dry-run preview modal showing blast radius                                                      |
+| **P3-E2E-001**    | Key Lifecycle E2E Suite    | `validator`       | All P3-UI                | `e2e/rotation.spec.ts`                                                                                | Journey 1: generate JWT secret via Forge → save → confirm entropy shown. Journey 2: set 30-day policy → trigger manual rotation → confirm new value active → confirm audit entry. Journey 3: view rotation dashboard → overdue keys listed |
+
 
 ### Phase 3 Parallel Execution Plan
 
@@ -963,26 +992,30 @@ Open the Secret Forge. Generate a JWT secret and confirm the entropy meter shows
 ## 12. Phase 4 — Breach Detection & Mitigation
 
 ### Goal
+
 Implement breach detection (git scanning, HIBP fingerprint matching), real-time alerting, the automated mitigation workflow, value fingerprinting, and the post-incident report generator.
 
 ### Entry Criteria
+
 Phase 3 stability gate passed. Human confirmed Phase 3 gate.
 
 ### Phase 4 Task Definitions
 
-| Task ID | Name | Agent | Depends On | Output Artifacts | Acceptance Criteria |
-|---|---|---|---|---|---|
-| **P4-CRYPTO-001** | Value Fingerprinting | `crypto-agent` | P1-CRYPTO-001 | `lib/detection/fingerprint.ts` | HMAC-SHA256 fingerprint generated on every secret write; fingerprint stored separately from encrypted value; fingerprint lookup is O(1); round-trip: fingerprint never reveals original value (property-based tests) |
-| **P4-ML-001** | Git Scanning Engine | `ml-agent` | P2-ML-001 | `lib/detection/git-scanner.ts`, `workers/git-scan-worker.ts` | Scans push payloads from GitHub webhook; matches against 400+ pattern library; emits structured Finding within < 60s of push; false positive rate < 2%; processes diffs only (not full repo on each push) |
-| **P4-ML-002** | HIBP Fingerprint Checker | `ml-agent` | P4-CRYPTO-001 | `lib/detection/hibp-checker.ts`, `workers/hibp-worker.ts` | Queries HIBP k-Anonymity API with fingerprint prefix; matches against leaked credential DB; runs on schedule per secret; no full value transmitted to HIBP; rate-limited to stay within HIBP API limits |
-| **P4-BE-001** | Breach Event Service | `backend-agent` | P4-ML-001, P4-ML-002 | `services/breach/`, `db/migrations/add_breach_events.ts` | Stores breach events with: source, detected_at, affected_secret_id, exposure_window, severity; deduplication (same secret, same source within 1h is one event); status lifecycle: detected → confirmed → mitigated |
-| **P4-BE-002** | Mitigation Workflow Engine | `backend-agent` | P4-BE-001, P3-BE-002 | `services/breach/mitigation.ts` | On confirmed breach: lock environment, trigger rotation for affected key, push new value to connected integrations, mark old key for revocation at provider; all steps are logged; partial failure is retried; mitigation plan is a structured object (previewable before execution) |
-| **P4-BE-003** | Alert Dispatcher | `backend-agent` | P4-BE-001 | `services/alerts/dispatcher.ts`, `lib/alerts/email.ts`, `lib/alerts/slack.ts` | Sends alert via: in-app notification (< 5s), email (< 30s), Slack webhook (< 30s); alert contains: affected key name, detection source, exposure window, one-click mitigation link; no secret value in alert payload |
-| **P4-BE-004** | Incident Report Generator | `backend-agent` | P4-BE-002 | `services/breach/incident-report.ts` | Generates structured incident report post-mitigation; fields: timeline, affected systems, remediation steps taken, prevention recommendations; exportable as PDF; test with 5 synthetic incident scenarios |
-| **P4-API-001** | Breach REST Endpoints | `api-agent` | P4-BE-001 through P4-BE-004 | `app/api/breach/` | Endpoints: get breach events, get mitigation plan (preview), execute mitigation, get incident report; admin-only for execute; all actions audit-logged |
-| **P4-UI-001** | Breach Alert UI | `ui-agent` | P4-API-001 | `components/breach/BreachAlert.tsx`, `components/breach/MitigationWorkflow.tsx` | Alert banner appears within 5 seconds of breach detection; severity badge; exposure window; step-by-step mitigation workflow with confirm dialog; progress indicator during mitigation; success/failure state |
-| **P4-UI-002** | Breach History & Incident Reports | `ui-agent` | P4-API-001 | `components/breach/BreachHistory.tsx`, `components/breach/IncidentReport.tsx` | Timeline of past breach events; status indicators; link to incident report; report rendered in UI and downloadable as PDF |
-| **P4-E2E-001** | Breach Detection E2E Suite | `validator` | All P4-UI | `e2e/breach.spec.ts` | Journey 1: simulate git push with exposed secret (test mode) → alert fires within 60 seconds → alert banner visible. Journey 2: open mitigation workflow → preview plan → execute → confirm new value active. Journey 3: download incident report → confirm contents |
+
+| Task ID           | Name                              | Agent           | Depends On                  | Output Artifacts                                                                | Acceptance Criteria                                                                                                                                                                                                                                                                  |
+| ----------------- | --------------------------------- | --------------- | --------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **P4-CRYPTO-001** | Value Fingerprinting              | `crypto-agent`  | P1-CRYPTO-001               | `lib/detection/fingerprint.ts`                                                  | HMAC-SHA256 fingerprint generated on every secret write; fingerprint stored separately from encrypted value; fingerprint lookup is O(1); round-trip: fingerprint never reveals original value (property-based tests)                                                                 |
+| **P4-ML-001**     | Git Scanning Engine               | `ml-agent`      | P2-ML-001                   | `lib/detection/git-scanner.ts`, `workers/git-scan-worker.ts`                    | Scans push payloads from GitHub webhook; matches against 400+ pattern library; emits structured Finding within < 60s of push; false positive rate < 2%; processes diffs only (not full repo on each push)                                                                            |
+| **P4-ML-002**     | HIBP Fingerprint Checker          | `ml-agent`      | P4-CRYPTO-001               | `lib/detection/hibp-checker.ts`, `workers/hibp-worker.ts`                       | Queries HIBP k-Anonymity API with fingerprint prefix; matches against leaked credential DB; runs on schedule per secret; no full value transmitted to HIBP; rate-limited to stay within HIBP API limits                                                                              |
+| **P4-BE-001**     | Breach Event Service              | `backend-agent` | P4-ML-001, P4-ML-002        | `services/breach/`, `db/migrations/add_breach_events.ts`                        | Stores breach events with: source, detected_at, affected_secret_id, exposure_window, severity; deduplication (same secret, same source within 1h is one event); status lifecycle: detected → confirmed → mitigated                                                                   |
+| **P4-BE-002**     | Mitigation Workflow Engine        | `backend-agent` | P4-BE-001, P3-BE-002        | `services/breach/mitigation.ts`                                                 | On confirmed breach: lock environment, trigger rotation for affected key, push new value to connected integrations, mark old key for revocation at provider; all steps are logged; partial failure is retried; mitigation plan is a structured object (previewable before execution) |
+| **P4-BE-003**     | Alert Dispatcher                  | `backend-agent` | P4-BE-001                   | `services/alerts/dispatcher.ts`, `lib/alerts/email.ts`, `lib/alerts/slack.ts`   | Sends alert via: in-app notification (< 5s), email (< 30s), Slack webhook (< 30s); alert contains: affected key name, detection source, exposure window, one-click mitigation link; no secret value in alert payload                                                                 |
+| **P4-BE-004**     | Incident Report Generator         | `backend-agent` | P4-BE-002                   | `services/breach/incident-report.ts`                                            | Generates structured incident report post-mitigation; fields: timeline, affected systems, remediation steps taken, prevention recommendations; exportable as PDF; test with 5 synthetic incident scenarios                                                                           |
+| **P4-API-001**    | Breach REST Endpoints             | `api-agent`     | P4-BE-001 through P4-BE-004 | `app/api/breach/`                                                               | Endpoints: get breach events, get mitigation plan (preview), execute mitigation, get incident report; admin-only for execute; all actions audit-logged                                                                                                                               |
+| **P4-UI-001**     | Breach Alert UI                   | `ui-agent`      | P4-API-001                  | `components/breach/BreachAlert.tsx`, `components/breach/MitigationWorkflow.tsx` | Alert banner appears within 5 seconds of breach detection; severity badge; exposure window; step-by-step mitigation workflow with confirm dialog; progress indicator during mitigation; success/failure state                                                                        |
+| **P4-UI-002**     | Breach History & Incident Reports | `ui-agent`      | P4-API-001                  | `components/breach/BreachHistory.tsx`, `components/breach/IncidentReport.tsx`   | Timeline of past breach events; status indicators; link to incident report; report rendered in UI and downloadable as PDF                                                                                                                                                            |
+| **P4-E2E-001**    | Breach Detection E2E Suite        | `validator`     | All P4-UI                   | `e2e/breach.spec.ts`                                                            | Journey 1: simulate git push with exposed secret (test mode) → alert fires within 60 seconds → alert banner visible. Journey 2: open mitigation workflow → preview plan → execute → confirm new value active. Journey 3: download incident report → confirm contents                 |
+
 
 ### Phase 4 Stability Gate Criteria
 
@@ -1006,27 +1039,31 @@ The system will simulate a breach in test mode. Observe: does the alert appear w
 ## 13. Phase 5 — IDE & Hosting Integrations
 
 ### Goal
+
 Build the VS Code extension, JetBrains plugin, and full two-way sync with Vercel, Render, Railway, and Fly.io. Implement the provider drift dashboard.
 
 ### Entry Criteria
+
 Phase 4 stability gate passed. Human confirmed Phase 4 gate.
 
 ### Phase 5 Task Definitions
 
-| Task ID | Name | Agent | Depends On | Output Artifacts | Acceptance Criteria |
-|---|---|---|---|---|---|
-| **P5-INT-001** | Provider Sync Engine | `provider-agent` | P2-BE-001 | `lib/providers/sync/engine.ts`, `lib/providers/sync/conflict-resolver.ts` | Bidirectional sync: vault → provider and provider → vault; drift detection (value differs between vault and provider); conflict resolution modes: vault-wins, provider-wins, manual; sync is atomic (all-or-nothing per environment) |
-| **P5-INT-002** | Vercel Adapter | `provider-agent` | P5-INT-001 | `lib/providers/vercel/` | OAuth with Vercel; list projects; read/write env vars per environment (production/preview/development); selective sync (exclude list); trigger redeploy; detect drift; all operations idempotent |
-| **P5-INT-003** | Render Adapter | `provider-agent` | P5-INT-001 | `lib/providers/render/` | API key auth; list services and env groups; sync env vars; trigger deploy on change; drift detection |
-| **P5-INT-004** | Railway Adapter | `provider-agent` | P5-INT-001 | `lib/providers/railway/` | OAuth with Railway; list projects and environments; read/write variables; drift detection |
-| **P5-INT-005** | Fly.io Adapter | `provider-agent` | P5-INT-001 | `lib/providers/fly/` | API token auth; list apps; sync secrets via Fly API; drift detection |
-| **P5-API-001** | Integration REST Endpoints | `api-agent` | P5-INT-001 through P5-INT-005 | `app/api/integrations/` | Endpoints: list connected integrations, connect (OAuth flow), disconnect, sync now, get sync status, get drift, resolve conflict; all audit-logged |
-| **P5-UI-001** | Integration Management UI | `ui-agent` | P5-API-001 | `components/integrations/IntegrationList.tsx`, `components/integrations/ConnectModal.tsx` | Integration list with connection status; connect flow (OAuth popup or API key form); disconnect with confirmation; last sync time; sync status badge |
-| **P5-UI-002** | Provider Drift Dashboard | `ui-agent` | P5-API-001 | `components/integrations/DriftDashboard.tsx`, `components/integrations/DriftDiff.tsx` | Per-integration: last sync time, in-sync/drifted/error status, number of drifted keys; diff panel showing drifted keys; resolve buttons: vault-wins, provider-wins, edit manually |
-| **P5-IDE-001** | VS Code Extension | `ide-agent` | P5-API-001 | `extensions/vscode/` | Extension package: status bar item (project/env), command palette commands (switch env, add secret, pull, push, diff), local .env injection on env switch, inline annotations on .env files, inline conflict warnings, hardcoded secret detection; authenticated via device flow; offline cache (24h TTL); published to VS Code Marketplace |
-| **P5-IDE-002** | JetBrains Plugin | `ide-agent` | P5-API-001 | `extensions/jetbrains/` | Plugin package: tool window with vault UI, env switcher, .env injection, inline annotations, conflict warnings; authenticated via device flow; offline cache; published to JetBrains Marketplace |
-| **P5-CLI-001** | CLI (envault) | `sdk-agent` | P5-API-001 | `packages/cli/` | Single binary (Go or Node SEA); commands: login, env use, get, run, push, pull, diff, rotate, audit; offline mode with encrypted cache; shell completion for bash/zsh/fish; README + man page |
-| **P5-E2E-001** | Integration E2E Suite | `validator` | All P5 | `e2e/integrations.spec.ts` | Journey 1: connect Vercel (mock OAuth) → push secrets → confirm mock Vercel API received correct values. Journey 2: simulate Vercel drift → drift dashboard shows drifted keys → resolve with vault-wins → confirm sync |
+
+| Task ID        | Name                       | Agent            | Depends On                    | Output Artifacts                                                                          | Acceptance Criteria                                                                                                                                                                                                                                                                                                                         |
+| -------------- | -------------------------- | ---------------- | ----------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P5-INT-001** | Provider Sync Engine       | `provider-agent` | P2-BE-001                     | `lib/providers/sync/engine.ts`, `lib/providers/sync/conflict-resolver.ts`                 | Bidirectional sync: vault → provider and provider → vault; drift detection (value differs between vault and provider); conflict resolution modes: vault-wins, provider-wins, manual; sync is atomic (all-or-nothing per environment)                                                                                                        |
+| **P5-INT-002** | Vercel Adapter             | `provider-agent` | P5-INT-001                    | `lib/providers/vercel/`                                                                   | OAuth with Vercel; list projects; read/write env vars per environment (production/preview/development); selective sync (exclude list); trigger redeploy; detect drift; all operations idempotent                                                                                                                                            |
+| **P5-INT-003** | Render Adapter             | `provider-agent` | P5-INT-001                    | `lib/providers/render/`                                                                   | API key auth; list services and env groups; sync env vars; trigger deploy on change; drift detection                                                                                                                                                                                                                                        |
+| **P5-INT-004** | Railway Adapter            | `provider-agent` | P5-INT-001                    | `lib/providers/railway/`                                                                  | OAuth with Railway; list projects and environments; read/write variables; drift detection                                                                                                                                                                                                                                                   |
+| **P5-INT-005** | Fly.io Adapter             | `provider-agent` | P5-INT-001                    | `lib/providers/fly/`                                                                      | API token auth; list apps; sync secrets via Fly API; drift detection                                                                                                                                                                                                                                                                        |
+| **P5-API-001** | Integration REST Endpoints | `api-agent`      | P5-INT-001 through P5-INT-005 | `app/api/integrations/`                                                                   | Endpoints: list connected integrations, connect (OAuth flow), disconnect, sync now, get sync status, get drift, resolve conflict; all audit-logged                                                                                                                                                                                          |
+| **P5-UI-001**  | Integration Management UI  | `ui-agent`       | P5-API-001                    | `components/integrations/IntegrationList.tsx`, `components/integrations/ConnectModal.tsx` | Integration list with connection status; connect flow (OAuth popup or API key form); disconnect with confirmation; last sync time; sync status badge                                                                                                                                                                                        |
+| **P5-UI-002**  | Provider Drift Dashboard   | `ui-agent`       | P5-API-001                    | `components/integrations/DriftDashboard.tsx`, `components/integrations/DriftDiff.tsx`     | Per-integration: last sync time, in-sync/drifted/error status, number of drifted keys; diff panel showing drifted keys; resolve buttons: vault-wins, provider-wins, edit manually                                                                                                                                                           |
+| **P5-IDE-001** | VS Code Extension          | `ide-agent`      | P5-API-001                    | `extensions/vscode/`                                                                      | Extension package: status bar item (project/env), command palette commands (switch env, add secret, pull, push, diff), local .env injection on env switch, inline annotations on .env files, inline conflict warnings, hardcoded secret detection; authenticated via device flow; offline cache (24h TTL); published to VS Code Marketplace |
+| **P5-IDE-002** | JetBrains Plugin           | `ide-agent`      | P5-API-001                    | `extensions/jetbrains/`                                                                   | Plugin package: tool window with vault UI, env switcher, .env injection, inline annotations, conflict warnings; authenticated via device flow; offline cache; published to JetBrains Marketplace                                                                                                                                            |
+| **P5-CLI-001** | CLI (envault)              | `sdk-agent`      | P5-API-001                    | `packages/cli/`                                                                           | Single binary (Go or Node SEA); commands: login, env use, get, run, push, pull, diff, rotate, audit; offline mode with encrypted cache; shell completion for bash/zsh/fish; README + man page                                                                                                                                               |
+| **P5-E2E-001** | Integration E2E Suite      | `validator`      | All P5                        | `e2e/integrations.spec.ts`                                                                | Journey 1: connect Vercel (mock OAuth) → push secrets → confirm mock Vercel API received correct values. Journey 2: simulate Vercel drift → drift dashboard shows drifted keys → resolve with vault-wins → confirm sync                                                                                                                     |
+
 
 ### Phase 5 Stability Gate Criteria
 
@@ -1050,26 +1087,30 @@ Connect your Vercel account. Push your project's secrets. Log into the Vercel da
 ## 14. Phase 6 — Enterprise & Scale
 
 ### Goal
+
 Implement RBAC advanced features (JIT access, break-glass, secret-level ACLs), SAML/SSO, zero-knowledge mode, compliance reporting, audit log streaming, and the access review workflow.
 
 ### Entry Criteria
+
 Phase 5 stability gate passed. Human confirmed Phase 5 gate.
 
 ### Phase 6 Task Definitions
 
-| Task ID | Name | Agent | Depends On | Output Artifacts | Acceptance Criteria |
-|---|---|---|---|---|---|
-| **P6-AUTH-001** | SAML 2.0 / OIDC SSO | `auth-agent` | P0-AUTH-001 | `lib/auth/saml.ts`, `lib/auth/oidc.ts` | Okta, Azure AD, Google Workspace SSO flows work; SCIM 2.0 provisioning endpoint; group-to-role mapping; SSO session tied to vault session; test against each provider's sandbox |
-| **P6-AUTH-002** | JIT Access & Break-Glass | `auth-agent` | P0-AUTH-001 | `services/access/jit.ts`, `services/access/break-glass.ts` | JIT: request → admin approval (Slack + email) → time-bounded access → auto-expiry; break-glass: one-command elevated access → immediate notification to all owners → incident auto-created; all access logged at entry and exit |
-| **P6-RBAC-001** | Secret-Level ACLs | `security-agent` | P1-BE-001 | `lib/rbac/secret-acls.ts`, `services/access/acl.ts` | Individual secrets have explicit allow-list of users/groups; ACL checked in addition to role; deny overrides allow; ACL changes are audit-logged; performance: ACL check adds < 5ms to secret read |
-| **P6-CRYPTO-001** | Zero-Knowledge Mode | `crypto-agent` | P1-CRYPTO-001 | `lib/crypto/zk-mode.ts`, `lib/crypto/enclave-client.ts` | Client-side key derivation from user passphrase; org root key never transmitted to server; server-side operations via enclave client (mock enclave in test; real Nitro Enclave in production); ZK mode toggle with migration path for existing vaults |
-| **P6-COMP-001** | Compliance Report Generator | `compliance-agent` | All phases | `services/compliance/`, `lib/reports/` | Generates: SOC2 CC6.x, PCI-DSS Req 3/8, ISO27001 A.9/A.10, HIPAA §164.312 reports; each report maps controls to evidence (audit log entries, policy documents, test results); exportable as PDF; reports are reproducible (same inputs = same output) |
-| **P6-COMP-002** | Audit Log Streaming | `devops-agent` | P0-SEC-001 | `lib/audit/streaming.ts`, `infra/terraform/audit-stream.tf` | Real-time streaming to: Datadog (JSON), Splunk (HEC), Elastic (Logstash); webhook delivery for custom SIEM; write-once log store with Merkle tree integrity proof; 7-year retention policy enforced |
-| **P6-COMP-003** | Access Review Workflow | `backend-agent` | P6-AUTH-001 | `services/access/review.ts`, `workers/access-review-worker.ts` | Scheduled reviews (monthly/quarterly/annual); email to project owners listing all members + permissions; owner must affirm or revoke each member; non-response escalation after 7 days; review completion logged as compliance evidence |
-| **P6-API-001** | Enterprise REST Endpoints | `api-agent` | All P6 | `app/api/enterprise/` | Endpoints: SAML config, JIT request/approve, break-glass, ACL CRUD, ZK mode enable/migrate, compliance reports, audit stream config, access review CRUD |
-| **P6-UI-001** | Enterprise Settings UI | `ui-agent` | P6-API-001 | `components/enterprise/` | SSO configuration wizard; JIT request/approval flow; break-glass button with double-confirm; ACL editor per secret; ZK mode toggle with clear warning; audit stream configuration |
-| **P6-UI-002** | Compliance Dashboard | `ui-agent` | P6-API-001 | `components/compliance/ComplianceDashboard.tsx`, `components/compliance/ReportDownload.tsx` | Compliance status per framework; control pass/fail indicators; one-click report download; last review date; access review status |
-| **P6-E2E-001** | Enterprise E2E Suite | `validator` | All P6 | `e2e/enterprise.spec.ts` | Journey 1: invite Viewer → confirm they cannot reveal secrets. Journey 2: request JIT access → approve → use → confirm expiry. Journey 3: set secret-level ACL → confirm non-member cannot read. Journey 4: download SOC2 report → confirm it's populated |
+
+| Task ID           | Name                        | Agent              | Depends On    | Output Artifacts                                                                            | Acceptance Criteria                                                                                                                                                                                                                                       |
+| ----------------- | --------------------------- | ------------------ | ------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P6-AUTH-001**   | SAML 2.0 / OIDC SSO         | `auth-agent`       | P0-AUTH-001   | `lib/auth/saml.ts`, `lib/auth/oidc.ts`                                                      | Okta, Azure AD, Google Workspace SSO flows work; SCIM 2.0 provisioning endpoint; group-to-role mapping; SSO session tied to vault session; test against each provider's sandbox                                                                           |
+| **P6-AUTH-002**   | JIT Access & Break-Glass    | `auth-agent`       | P0-AUTH-001   | `services/access/jit.ts`, `services/access/break-glass.ts`                                  | JIT: request → admin approval (Slack + email) → time-bounded access → auto-expiry; break-glass: one-command elevated access → immediate notification to all owners → incident auto-created; all access logged at entry and exit                           |
+| **P6-RBAC-001**   | Secret-Level ACLs           | `security-agent`   | P1-BE-001     | `lib/rbac/secret-acls.ts`, `services/access/acl.ts`                                         | Individual secrets have explicit allow-list of users/groups; ACL checked in addition to role; deny overrides allow; ACL changes are audit-logged; performance: ACL check adds < 5ms to secret read                                                        |
+| **P6-CRYPTO-001** | Zero-Knowledge Mode         | `crypto-agent`     | P1-CRYPTO-001 | `lib/crypto/zk-mode.ts`, `lib/crypto/enclave-client.ts`                                     | Client-side key derivation from user passphrase; org root key never transmitted to server; server-side operations via enclave client (mock enclave in test; real Nitro Enclave in production); ZK mode toggle with migration path for existing vaults     |
+| **P6-COMP-001**   | Compliance Report Generator | `compliance-agent` | All phases    | `services/compliance/`, `lib/reports/`                                                      | Generates: SOC2 CC6.x, PCI-DSS Req 3/8, ISO27001 A.9/A.10, HIPAA §164.312 reports; each report maps controls to evidence (audit log entries, policy documents, test results); exportable as PDF; reports are reproducible (same inputs = same output)     |
+| **P6-COMP-002**   | Audit Log Streaming         | `devops-agent`     | P0-SEC-001    | `lib/audit/streaming.ts`, `infra/terraform/audit-stream.tf`                                 | Real-time streaming to: Datadog (JSON), Splunk (HEC), Elastic (Logstash); webhook delivery for custom SIEM; write-once log store with Merkle tree integrity proof; 7-year retention policy enforced                                                       |
+| **P6-COMP-003**   | Access Review Workflow      | `backend-agent`    | P6-AUTH-001   | `services/access/review.ts`, `workers/access-review-worker.ts`                              | Scheduled reviews (monthly/quarterly/annual); email to project owners listing all members + permissions; owner must affirm or revoke each member; non-response escalation after 7 days; review completion logged as compliance evidence                   |
+| **P6-API-001**    | Enterprise REST Endpoints   | `api-agent`        | All P6        | `app/api/enterprise/`                                                                       | Endpoints: SAML config, JIT request/approve, break-glass, ACL CRUD, ZK mode enable/migrate, compliance reports, audit stream config, access review CRUD                                                                                                   |
+| **P6-UI-001**     | Enterprise Settings UI      | `ui-agent`         | P6-API-001    | `components/enterprise/`                                                                    | SSO configuration wizard; JIT request/approval flow; break-glass button with double-confirm; ACL editor per secret; ZK mode toggle with clear warning; audit stream configuration                                                                         |
+| **P6-UI-002**     | Compliance Dashboard        | `ui-agent`         | P6-API-001    | `components/compliance/ComplianceDashboard.tsx`, `components/compliance/ReportDownload.tsx` | Compliance status per framework; control pass/fail indicators; one-click report download; last review date; access review status                                                                                                                          |
+| **P6-E2E-001**    | Enterprise E2E Suite        | `validator`        | All P6        | `e2e/enterprise.spec.ts`                                                                    | Journey 1: invite Viewer → confirm they cannot reveal secrets. Journey 2: request JIT access → approve → use → confirm expiry. Journey 3: set secret-level ACL → confirm non-member cannot read. Journey 4: download SOC2 report → confirm it's populated |
+
 
 ### Phase 6 Stability Gate Criteria
 
@@ -1228,14 +1269,16 @@ Human notification: Mandatory. This is the one finding that escalates to human i
 
 ### Orchestrator Special States
 
-| State | Trigger | Action |
-|---|---|---|
-| `STALLED` | Agent heartbeat lost for > timeout_ms | Task reassigned to a fresh agent; stalled agent marked inactive |
-| `DEADLOCKED` | Circular dependency detected in DAG | Orchestrator surfaces to human as architectural error |
-| `CRITICAL-SECURITY` | Secret-leaked finding from any Validator | All tasks halted; `security-agent` assigned immediately; human notified |
-| `GATE-STUCK` | Human gate not confirmed within 72 hours | Orchestrator sends reminder; after 7 days, escalates to project owner |
-| `ADVISOR-SPLIT` | SA and QA APPROVE, IA REJECTS (or any split) | Full Governance Council convenes; Orchestrator generates reconciliation report |
-| `FIXER-EXHAUSTED` | 4 fixer cycles with no resolution | Human escalation mandatory; task marked BLOCKED; phase cannot advance |
+
+| State               | Trigger                                      | Action                                                                         |
+| ------------------- | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `STALLED`           | Agent heartbeat lost for > timeout_ms        | Task reassigned to a fresh agent; stalled agent marked inactive                |
+| `DEADLOCKED`        | Circular dependency detected in DAG          | Orchestrator surfaces to human as architectural error                          |
+| `CRITICAL-SECURITY` | Secret-leaked finding from any Validator     | All tasks halted; `security-agent` assigned immediately; human notified        |
+| `GATE-STUCK`        | Human gate not confirmed within 72 hours     | Orchestrator sends reminder; after 7 days, escalates to project owner          |
+| `ADVISOR-SPLIT`     | SA and QA APPROVE, IA REJECTS (or any split) | Full Governance Council convenes; Orchestrator generates reconciliation report |
+| `FIXER-EXHAUSTED`   | 4 fixer cycles with no resolution            | Human escalation mandatory; task marked BLOCKED; phase cannot advance          |
+
 
 ---
 
@@ -1328,39 +1371,45 @@ This matrix is queryable at any time to answer: "Which PRD requirements are not 
 
 ## 18. Glossary
 
-| Term | Definition |
-|---|---|
-| **ADR** | Architecture Decision Record — a document capturing a key technical decision, its context, and the alternatives considered |
-| **Artifact** | Any file or set of files produced by a build agent as the output of a task |
-| **Blast Radius** | The set of environments, integrations, and dependent services affected by a rotation or change operation |
-| **Contract Test** | A test that verifies a service's API responses match the OpenAPI specification, without requiring the real backend |
-| **DAG** | Directed Acyclic Graph — the dependency graph of tasks, ensuring no circular dependencies and enabling parallel execution of independent tasks |
-| **Device Flow** | An OAuth 2.0 flow for authenticating CLI tools and IDE extensions without a browser redirect |
-| **Drift** | A state where the value of a key in one system (e.g., the vault) differs from the same key in another system (e.g., a hosting provider) |
-| **Fixer Agent** | A specialised agent assigned to repair a build artifact after a validation failure |
-| **Governance Council** | The three permanent advisor agents (Security, Quality, Integrity) whose unanimous approval is required before any phase can advance |
-| **Human Gate** | The single human interaction point at the end of each phase, where the human confirms the deployed product works as expected |
-| **Idempotent** | An operation that produces the same result regardless of how many times it is executed |
-| **Known-Answer Test** | A cryptographic test that verifies a function produces the expected output for a fixed, pre-computed input — used to validate crypto correctness |
-| **L4 Autonomy** | Level 4 autonomy: the system self-governs, self-corrects, and self-reports, with human input only at defined boundary events |
-| **Merkle Tree** | A cryptographic data structure that enables efficient and verifiable proof of the integrity and completeness of a log |
-| **Nock** | A Node.js HTTP mocking library used to simulate provider API responses in tests without real network calls |
+
+| Term                    | Definition                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ADR**                 | Architecture Decision Record — a document capturing a key technical decision, its context, and the alternatives considered                                          |
+| **Artifact**            | Any file or set of files produced by a build agent as the output of a task                                                                                          |
+| **Blast Radius**        | The set of environments, integrations, and dependent services affected by a rotation or change operation                                                            |
+| **Contract Test**       | A test that verifies a service's API responses match the OpenAPI specification, without requiring the real backend                                                  |
+| **DAG**                 | Directed Acyclic Graph — the dependency graph of tasks, ensuring no circular dependencies and enabling parallel execution of independent tasks                      |
+| **Device Flow**         | An OAuth 2.0 flow for authenticating CLI tools and IDE extensions without a browser redirect                                                                        |
+| **Drift**               | A state where the value of a key in one system (e.g., the vault) differs from the same key in another system (e.g., a hosting provider)                             |
+| **Fixer Agent**         | A specialised agent assigned to repair a build artifact after a validation failure                                                                                  |
+| **Governance Council**  | The three permanent advisor agents (Security, Quality, Integrity) whose unanimous approval is required before any phase can advance                                 |
+| **Human Gate**          | The single human interaction point at the end of each phase, where the human confirms the deployed product works as expected                                        |
+| **Idempotent**          | An operation that produces the same result regardless of how many times it is executed                                                                              |
+| **Known-Answer Test**   | A cryptographic test that verifies a function produces the expected output for a fixed, pre-computed input — used to validate crypto correctness                    |
+| **L4 Autonomy**         | Level 4 autonomy: the system self-governs, self-corrects, and self-reports, with human input only at defined boundary events                                        |
+| **Merkle Tree**         | A cryptographic data structure that enables efficient and verifiable proof of the integrity and completeness of a log                                               |
+| **Nock**                | A Node.js HTTP mocking library used to simulate provider API responses in tests without real network calls                                                          |
 | **Property-Based Test** | A test that verifies a function satisfies a general property (e.g., "encrypt then decrypt always returns the original value") across many randomly generated inputs |
-| **RC** | Release Candidate — a tagged build that has passed all automated validation and is ready for human confirmation |
-| **RLS** | Row-Level Security — a PostgreSQL feature that enforces access control at the database row level |
-| **RVS** | Recursive Validator System — the 9-level automated test and analysis cascade |
-| **Self-Revision** | The process by which a build agent reviews and corrects its own output before signalling completion |
-| **Soak Test** | A performance test that runs at sustained load for an extended period (typically 10–60 minutes) to detect memory leaks and resource exhaustion |
-| **Swarm** | The full collection of agents (builder, validator, fixer, governance, orchestrator) operating together on the build |
-| **TTL** | Time-to-live — the duration after which a cached value is considered stale and must be refreshed |
+| **RC**                  | Release Candidate — a tagged build that has passed all automated validation and is ready for human confirmation                                                     |
+| **RLS**                 | Row-Level Security — a PostgreSQL feature that enforces access control at the database row level                                                                    |
+| **RVS**                 | Recursive Validator System — the 9-level automated test and analysis cascade                                                                                        |
+| **Self-Revision**       | The process by which a build agent reviews and corrects its own output before signalling completion                                                                 |
+| **Soak Test**           | A performance test that runs at sustained load for an extended period (typically 10–60 minutes) to detect memory leaks and resource exhaustion                      |
+| **Swarm**               | The full collection of agents (builder, validator, fixer, governance, orchestrator) operating together on the build                                                 |
+| **TTL**                 | Time-to-live — the duration after which a cached value is considered stale and must be refreshed                                                                    |
+
 
 ---
 
 *This document is the single source of truth for the EnVault autonomous build. All agents read from this document. All outputs trace back to this document. Revisions to this document must be approved by the Governance Council before tasks are re-assigned.*
 
 ---
+
 **Document Control**
 
-| Version | Date | Change |
-|---|---|---|
-| 1.0 | May 2026 | Initial autonomous build plan — Phase 0 through Phase 6 |
+
+| Version | Date     | Change                                                  |
+| ------- | -------- | ------------------------------------------------------- |
+| 1.0     | May 2026 | Initial autonomous build plan — Phase 0 through Phase 6 |
+
+

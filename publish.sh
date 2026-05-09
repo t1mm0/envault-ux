@@ -75,4 +75,4 @@ else
 fi
 
 echo ""
-echo "✓ Done! https://github.com/${FULL_NAME}"
+echo "✓ Done! $(gh repo view --json url -q .url)"

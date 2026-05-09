@@ -21,15 +21,39 @@ The UX is built around four principles:
 
 ---
 
+## Domain hierarchy (canonical)
+
+Configuration data is modeled as a strict tree. Paths in UX and APIs should follow this ordering:
+
+| Level | Meaning |
+|---|---|
+| **Project** | One app or workspace in EnVault (matches the header project switcher). |
+| **Vault** | Exactly **one logical vault per project** — the encrypted store for that project’s secrets. Not a separate “vault per environment.” |
+| **Environment** | A **slice inside** the project vault (`production`, `staging`, `preview`, `development`, custom). Holds its own namespace of variables. |
+| **Variable** | One managed record (aligned with FR “secret records”): type, versioning, RBAC, etc. |
+| **Key** | The variable’s **name** (`DATABASE_URL`, …); **unique within an environment**. The **value** (and ciphertext, metadata) is paired with the key at the same level — key and value are not separate hierarchy levels. |
+
+**Mental path:** `Project → Vault → Environment → Variable → Key (name) + Value`
+
+**Fleet UI:** **Workspace** is an optional layer *above* **Project** (multi-project dashboard only); it does not sit between Vault and Environment.
+
+The **Vault** screen in this prototype tabs by **Environment** and lists one row per **Variable**, with **Key** as the first column.
+
+---
+
 ## Views
+
+The top nav starts at **Workspace** (all projects) — use **Overview** for the **active** project (chosen in the header switcher).
 
 | View | Purpose |
 |---|---|
-| **Overview** | Health dashboard — pending count, recent approvals, active auto-rules |
-| **Approval Queue** | The core human-in-the-loop screen — diff view, impact assessment, approve/reject |
+| **Workspace** | Multi-project fleet — roll-up stats, health per app, shortcuts to overview, vault, and queue |
+| **Overview** | Single-project trust dashboard — pending count, recent approvals, active auto-rules, shortcut to add a project |
+| **Add project** | Import a workspace: GitHub repo picker, Render-style paste, or connect Render for env sync |
+| **Approvals** | The core human-in-the-loop screen — diff view, impact assessment, approve/reject |
 | **Auto-Rules** | Create and manage rules for delegating repetitive approvals |
 | **Activity Log** | Full transparency feed — every action the system has taken or queued |
-| **Vault** | Read-only secret listing (edits go through the approval queue) |
+| **Vault** | **Project-scoped** vault (one per app) with **environment tabs** (prod / staging / preview / dev…) as slices inside it; read per tab, writes still go through **Approvals** — not a standalone env-only vault root |
 
 ---
 
